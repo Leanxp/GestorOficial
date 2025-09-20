@@ -22,7 +22,8 @@
     "start": "set PORT=3000 && react-scripts start",
     "server": "node server.js",
     "dev": "concurrently \"npm run start\" \"npm run server\"",
-    "build": "react-scripts build",
+    "build": "npx react-scripts build",
+    "vercel-build": "npx react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
