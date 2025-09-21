@@ -162,20 +162,123 @@ export const database = {
   // Obtener inventario
   async getInventory() {
     try {
-      const { data, error } = await supabase
+      // Primero intentar con la nueva estructura (después de migración)
+      let { data, error } = await supabase
         .from('inventory')
         .select(`
           *,
-          ingredients(name, unit_measure, min_stock_level),
+          ingredients(
+            name, 
+            unit_measure, 
+            min_stock_level,
+            base_price,
+            alerg_gluten,
+            alerg_crustaceos,
+            alerg_huevos,
+            alerg_pescado,
+            alerg_cacahuetes,
+            alerg_soja,
+            alerg_leche,
+            alerg_frutos,
+            alerg_apio,
+            alerg_mostaza,
+            alerg_sesamo,
+            alerg_sulfitos,
+            alerg_altramuces,
+            alerg_moluscos
+          ),
           inventory_families(name),
-          inventory_subfamilies(name)
+          inventory_subfamilies(name),
+          suppliers(
+            name,
+            contact_person,
+            email,
+            phone
+          )
         `)
         .order('created_at', { ascending: false })
+      
+      // Si hay error, usar la estructura original
+      if (error) {
+        console.log('Usando estructura original de inventario...')
+        const result = await supabase
+          .from('inventory')
+          .select(`
+            *,
+            ingredients(
+              name, 
+              unit_measure, 
+              min_stock_level,
+              base_price,
+              alerg_gluten,
+              alerg_crustaceos,
+              alerg_huevos,
+              alerg_pescado,
+              alerg_cacahuetes,
+              alerg_soja,
+              alerg_leche,
+              alerg_frutos,
+              alerg_apio,
+              alerg_mostaza,
+              alerg_sesamo,
+              alerg_sulfitos,
+              alerg_altramuces,
+              alerg_moluscos
+            ),
+            inventory_families(name),
+            inventory_subfamilies(name)
+          `)
+          .order('created_at', { ascending: false })
+        
+        if (result.error) throw result.error
+        return { success: true, data: result.data }
+      }
+      
+      return { success: true, data }
+    } catch (error) {
+      console.error('Error al obtener inventario:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Obtener inventario con información completa de proveedores
+  async getInventoryWithSuppliers() {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_inventory_with_suppliers')
       
       if (error) throw error
       return { success: true, data }
     } catch (error) {
-      console.error('Error al obtener inventario:', error)
+      console.error('Error al obtener inventario con proveedores:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Obtener inventario por proveedor
+  async getInventoryBySupplier(supplierId) {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_inventory_by_supplier', { supplier_id_param: supplierId })
+      
+      if (error) throw error
+      return { success: true, data }
+    } catch (error) {
+      console.error('Error al obtener inventario por proveedor:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Comparar precios entre proveedores
+  async compareSupplierPrices(ingredientId) {
+    try {
+      const { data, error } = await supabase
+        .rpc('compare_supplier_prices', { ingredient_id_param: ingredientId })
+      
+      if (error) throw error
+      return { success: true, data }
+    } catch (error) {
+      console.error('Error al comparar precios de proveedores:', error)
       return { success: false, error: error.message }
     }
   },
@@ -331,6 +434,42 @@ export const database = {
     }
   },
 
+  // Actualizar ingrediente de proveedor
+  async updateSupplierIngredient(id, ingredientData) {
+    try {
+      const { data, error } = await supabase
+        .from('supplier_ingredients')
+        .update(ingredientData)
+        .eq('id', id)
+        .select(`
+          *,
+          ingredients(name, unit_measure)
+        `)
+      
+      if (error) throw error
+      return { success: true, data: data[0] }
+    } catch (error) {
+      console.error('Error al actualizar ingrediente del proveedor:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Eliminar ingrediente de proveedor
+  async deleteSupplierIngredient(id) {
+    try {
+      const { error } = await supabase
+        .from('supplier_ingredients')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('Error al eliminar ingrediente del proveedor:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
   // Obtener licencia de usuario
   async getUserLicense(email) {
     try {
@@ -377,6 +516,104 @@ export const database = {
       return { success: true, data }
     } catch (error) {
       console.error('Error al obtener usuarios:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Actualizar inventario con información de proveedor
+  async updateInventoryWithSupplier(inventoryId, inventoryData) {
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .update(inventoryData)
+        .eq('id', inventoryId)
+        .select(`
+          *,
+          ingredients(name, unit_measure),
+          suppliers(name, contact_person),
+          inventory_families(name),
+          inventory_subfamilies(name)
+        `)
+      
+      if (error) throw error
+      return { success: true, data: data[0] }
+    } catch (error) {
+      console.error('Error al actualizar inventario con proveedor:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Crear entrada de inventario con proveedor
+  async createInventoryWithSupplier(inventoryData) {
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .insert([inventoryData])
+        .select(`
+          *,
+          ingredients(name, unit_measure),
+          suppliers(name, contact_person),
+          inventory_families(name),
+          inventory_subfamilies(name)
+        `)
+      
+      if (error) throw error
+      return { success: true, data: data[0] }
+    } catch (error) {
+      console.error('Error al crear inventario con proveedor:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Obtener estadísticas de inventario por proveedor
+  async getInventoryStatsBySupplier() {
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select(`
+          supplier_id,
+          suppliers(name),
+          quantity,
+          purchase_price,
+          supplier_price,
+          delivery_date
+        `)
+      
+      if (error) throw error
+      
+      // Procesar datos para estadísticas
+      const stats = data.reduce((acc, item) => {
+        const supplierId = item.supplier_id
+        if (!acc[supplierId]) {
+          acc[supplierId] = {
+            supplier_name: item.suppliers?.name || 'Sin proveedor',
+            total_items: 0,
+            total_quantity: 0,
+            total_value: 0,
+            avg_price: 0,
+            last_delivery: null
+          }
+        }
+        
+        acc[supplierId].total_items += 1
+        acc[supplierId].total_quantity += parseFloat(item.quantity || 0)
+        acc[supplierId].total_value += parseFloat(item.quantity || 0) * parseFloat(item.purchase_price || 0)
+        
+        if (item.delivery_date && (!acc[supplierId].last_delivery || new Date(item.delivery_date) > new Date(acc[supplierId].last_delivery))) {
+          acc[supplierId].last_delivery = item.delivery_date
+        }
+        
+        return acc
+      }, {})
+      
+      // Calcular promedios
+      Object.values(stats).forEach(stat => {
+        stat.avg_price = stat.total_items > 0 ? stat.total_value / stat.total_quantity : 0
+      })
+      
+      return { success: true, data: Object.values(stats) }
+    } catch (error) {
+      console.error('Error al obtener estadísticas de inventario por proveedor:', error)
       return { success: false, error: error.message }
     }
   }

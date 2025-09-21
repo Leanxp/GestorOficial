@@ -26,6 +26,23 @@
   .card {
     @apply bg-card-bg rounded-lg shadow-md p-8 transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg;
   }
+  
+  /* Mejoras para móviles */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  .mobile-optimized {
+    @apply touch-manipulation select-none;
+  }
+  
+  .mobile-card {
+    @apply bg-white rounded-xl shadow-lg border border-gray-100 p-4 transition-all duration-200 hover:shadow-xl active:scale-[0.98];
+  }
+  
+  .mobile-button {
+    @apply px-4 py-3 rounded-lg font-medium transition-all duration-200 active:scale-95 touch-manipulation;
+  }
 }
 
 code {
