@@ -23,7 +23,7 @@ const LicenseManagement = () => {
       setError('No tienes permisos para acceder a esta sección')
       setLoading(false)
     }
-  }, [])
+  }, [isAdmin, loadUsers])
 
   const loadUsers = async () => {
     try {

@@ -241,20 +241,6 @@ const InventoryManagement = () => {
     }
   };
 
-  const handleEditFamilyChange = async (e) => {
-    const familyId = e.target.value;
-    setEditForm(prev => ({
-      ...prev,
-      family_id: familyId,
-      subfamily_id: ''
-    }));
-    
-    if (familyId) {
-      await fetchSubfamiliesForEdit(familyId);
-    } else {
-      setSubfamilies([]);
-    }
-  };
 
   const handleCancelEdit = () => {
     setEditingItem(null);
@@ -279,8 +265,8 @@ const InventoryManagement = () => {
     try {
       console.log('Actualizando inventario con ID:', editingItem);
       
-      // Obtener el item del inventario para acceder al ingredient_id
-      const { data: inventoryItem, error: fetchError } = await supabase
+      // Verificar que el item existe antes de actualizar
+      const { error: fetchError } = await supabase
         .from('inventory')
         .select('ingredient_id')
         .eq('id', editingItem)
