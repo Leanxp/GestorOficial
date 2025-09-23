@@ -58,7 +58,7 @@ export const LicenseProvider = ({ children }) => {
 
   useEffect(() => {
     loadUserLicense()
-  }, [user])
+  }, [user, loadUserLicense])
 
   // Verificar si el usuario es administrador
   const isAdmin = () => {
