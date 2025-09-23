@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useLicense } from '../hooks/useLicense'
 
 const LicenseManagement = () => {
@@ -16,16 +16,7 @@ const LicenseManagement = () => {
     is_admin: false
   })
 
-  useEffect(() => {
-    if (isAdmin()) {
-      loadUsers()
-    } else {
-      setError('No tienes permisos para acceder a esta sección')
-      setLoading(false)
-    }
-  }, [isAdmin, loadUsers])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
       const result = await getAllUsers()
@@ -40,7 +31,16 @@ const LicenseManagement = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [getAllUsers])
+
+  useEffect(() => {
+    if (isAdmin()) {
+      loadUsers()
+    } else {
+      setError('No tienes permisos para acceder a esta sección')
+      setLoading(false)
+    }
+  }, [isAdmin, loadUsers])
 
   const handleEditUser = (user) => {
     setSelectedUser(user)
