@@ -6,6 +6,8 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import InventoryManagement from './components/InventoryManagement';
+import LicenseManagement from './components/LicenseManagement';
+import SuppliersManagement from './components/SuppliersManagement';
 import './index.css';
 
 // Componente para proteger rutas
@@ -49,6 +51,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <InventoryManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/licenses"
+              element={
+                <ProtectedRoute>
+                  <LicenseManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/suppliers"
+              element={
+                <ProtectedRoute>
+                  <SuppliersManagement />
                 </ProtectedRoute>
               }
             />
