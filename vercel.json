@@ -17,11 +17,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "ignore": [
-    "server.js",
-    "backup_*.js",
-    "backup_*.sql",
-    "*.sql"
-  ]
+  }
 }
