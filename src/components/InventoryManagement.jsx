@@ -24,66 +24,21 @@ const InventoryManagement = () => {
     quantity: '',
     purchase_price: '',
     expiry_date: '',
-    batch_number: '',
-    alerg_gluten: 0,
-    alerg_crustaceos: 0,
-    alerg_huevos: 0,
-    alerg_pescado: 0,
-    alerg_cacahuetes: 0,
-    alerg_soja: 0,
-    alerg_leche: 0,
-    alerg_frutos: 0,
-    alerg_apio: 0,
-    alerg_mostaza: 0,
-    alerg_sesamo: 0,
-    alerg_sulfitos: 0,
-    alerg_altramuces: 0,
-    alerg_moluscos: 0
+    batch_number: ''
   });
   const [showNewProductModal, setShowNewProductModal] = useState(false);
   const [newProduct, setNewProduct] = useState({
-    ingredient_name: '',
-    description: '',
+    ingredient_id: '',
     family_id: '',
     subfamily_id: '',
-    quantity: '',
-    purchase_price: '',
-    expiry_date: '',
-    batch_number: '',
     supplier_id: '',
-    supplier_ingredient_id: '',
-    supplier_lot_number: '',
-    supplier_price: '',
-    delivery_date: '',
-    invoice_number: '',
-    unit_measure: '',
-    alergeno_gluten: 0,
-    alergeno_crustaceos: 0,
-    alergeno_huevos: 0,
-    alergeno_pescado: 0,
-    alergeno_cacahuetes: 0,
-    alergeno_soja: 0,
-    alergeno_leche: 0,
-    alergeno_frutos_cascara: 0,
-    alergeno_apio: 0,
-    alergeno_mostaza: 0,
-    alergeno_sesamo: 0,
-    alergeno_dioxido_azufre_sulfitos: 0,
-    alergeno_altramuces: 0,
-    alergeno_moluscos: 0
+    quantity: '',
+    expiry_date: '',
+    batch_number: ''
   });
   const [suppliers, setSuppliers] = useState([]);
-  const [unitMeasures] = useState([
-    'kg',
-    'g',
-    'litro',
-    'ml',
-    'unidades',
-    'paquetes',
-    'latas',
-    'botellas',
-    'cajas'
-  ]);
+  const [ingredients, setIngredients] = useState([]);
+  const [availableSuppliers, setAvailableSuppliers] = useState([]);
 
   // Hook para manejar el teclado
   useEffect(() => {
@@ -91,7 +46,7 @@ const InventoryManagement = () => {
       if (event.key === 'Escape') {
         // Cerrar el modal más reciente abierto
         if (showNewProductModal) {
-          setShowNewProductModal(false);
+          handleCloseModal();
         }
       }
     };
@@ -106,12 +61,14 @@ const InventoryManagement = () => {
     fetchInventory();
     fetchFamilies();
     fetchSuppliers();
+    fetchIngredients();
   }, []);
 
   const fetchInventory = async () => {
     try {
       const result = await database.getInventory();
       if (result.success) {
+        console.log('Datos del inventario:', result.data);
         setInventory(result.data);
       } else {
         setError(result.error);
@@ -146,6 +103,20 @@ const InventoryManagement = () => {
       }
     } catch (err) {
       console.error('Error al cargar los proveedores:', err);
+    }
+  };
+
+  const fetchIngredients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ingredients')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      setIngredients(data || []);
+    } catch (err) {
+      console.error('Error al cargar los ingredientes:', err);
     }
   };
 
@@ -190,9 +161,50 @@ const InventoryManagement = () => {
     }));
   };
 
+  const handleIngredientChange = async (e) => {
+    const ingredientId = e.target.value;
+    setNewProduct(prev => ({
+      ...prev,
+      ingredient_id: ingredientId,
+      supplier_id: ''
+    }));
+    
+    if (ingredientId) {
+      try {
+        // Obtener proveedores que tienen este ingrediente
+        const { data, error } = await supabase
+          .from('supplier_ingredients')
+          .select(`
+            supplier_id,
+            suppliers (
+              id,
+              name
+            )
+          `)
+          .eq('ingredient_id', ingredientId);
+        
+        if (error) throw error;
+        
+        // Extraer los proveedores únicos
+        const uniqueSuppliers = data.reduce((acc, item) => {
+          if (!acc.find(s => s.id === item.suppliers.id)) {
+            acc.push(item.suppliers);
+          }
+          return acc;
+        }, []);
+        
+        setAvailableSuppliers(uniqueSuppliers);
+      } catch (err) {
+        console.error('Error al cargar proveedores del ingrediente:', err);
+        setAvailableSuppliers([]);
+      }
+    } else {
+      setAvailableSuppliers([]);
+    }
+  };
+
   const handleEdit = (item) => {
     setEditingItem(item.id);
-    const ingredient = item.ingredients || {};
     setEditForm({
       ingredient_name: item.ingredient_name,
       family_id: item.family_id,
@@ -206,21 +218,7 @@ const InventoryManagement = () => {
       quantity: item.quantity,
       purchase_price: item.purchase_price,
       expiry_date: item.expiry_date,
-      batch_number: item.batch_number,
-      alerg_gluten: ingredient.alerg_gluten || 0,
-      alerg_crustaceos: ingredient.alerg_crustaceos || 0,
-      alerg_huevos: ingredient.alerg_huevos || 0,
-      alerg_pescado: ingredient.alerg_pescado || 0,
-      alerg_cacahuetes: ingredient.alerg_cacahuetes || 0,
-      alerg_soja: ingredient.alerg_soja || 0,
-      alerg_leche: ingredient.alerg_leche || 0,
-      alerg_frutos: ingredient.alerg_frutos || 0,
-      alerg_apio: ingredient.alerg_apio || 0,
-      alerg_mostaza: ingredient.alerg_mostaza || 0,
-      alerg_sesamo: ingredient.alerg_sesamo || 0,
-      alerg_sulfitos: ingredient.alerg_sulfitos || 0,
-      alerg_altramuces: ingredient.alerg_altramuces || 0,
-      alerg_moluscos: ingredient.alerg_moluscos || 0
+      batch_number: item.batch_number
     });
     if (item.family_id) {
       fetchSubfamiliesForEdit(item.family_id);
@@ -273,21 +271,7 @@ const InventoryManagement = () => {
       quantity: '',
       purchase_price: '',
       expiry_date: '',
-      batch_number: '',
-      alerg_gluten: 0,
-      alerg_crustaceos: 0,
-      alerg_huevos: 0,
-      alerg_pescado: 0,
-      alerg_cacahuetes: 0,
-      alerg_soja: 0,
-      alerg_leche: 0,
-      alerg_frutos: 0,
-      alerg_apio: 0,
-      alerg_mostaza: 0,
-      alerg_sesamo: 0,
-      alerg_sulfitos: 0,
-      alerg_altramuces: 0,
-      alerg_moluscos: 0
+      batch_number: ''
     });
   };
 
@@ -314,47 +298,14 @@ const InventoryManagement = () => {
           family_id: editForm.family_id,
           subfamily_id: editForm.subfamily_id,
           quantity: parseFloat(editForm.quantity),
-          purchase_price: parseFloat(editForm.purchase_price),
           expiry_date: editForm.expiry_date,
-          batch_number: editForm.batch_number,
-          supplier_id: editForm.supplier_id || null,
-          supplier_ingredient_id: editForm.supplier_ingredient_id || null,
-          supplier_lot_number: editForm.supplier_lot_number || null,
-          supplier_price: editForm.supplier_price ? parseFloat(editForm.supplier_price) : null,
-          delivery_date: editForm.delivery_date || null,
-          invoice_number: editForm.invoice_number || null
+          batch_number: editForm.batch_number
         })
         .eq('id', editingItem);
       
       if (inventoryError) {
         console.error('Error al actualizar inventario:', inventoryError);
         throw inventoryError;
-      }
-      
-      // Actualizar los alérgenos en la tabla ingredients
-      const { error: ingredientsError } = await supabase
-        .from('ingredients')
-        .update({
-          alerg_gluten: editForm.alerg_gluten,
-          alerg_crustaceos: editForm.alerg_crustaceos,
-          alerg_huevos: editForm.alerg_huevos,
-          alerg_pescado: editForm.alerg_pescado,
-          alerg_cacahuetes: editForm.alerg_cacahuetes,
-          alerg_soja: editForm.alerg_soja,
-          alerg_leche: editForm.alerg_leche,
-          alerg_frutos: editForm.alerg_frutos,
-          alerg_apio: editForm.alerg_apio,
-          alerg_mostaza: editForm.alerg_mostaza,
-          alerg_sesamo: editForm.alerg_sesamo,
-          alerg_sulfitos: editForm.alerg_sulfitos,
-          alerg_altramuces: editForm.alerg_altramuces,
-          alerg_moluscos: editForm.alerg_moluscos
-        })
-        .eq('id', inventoryItem.ingredient_id);
-      
-      if (ingredientsError) {
-        console.error('Error al actualizar alérgenos:', ingredientsError);
-        throw ingredientsError;
       }
       
       await fetchInventory();
@@ -401,55 +352,40 @@ const InventoryManagement = () => {
   const handleNewProductSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Primero crear el ingrediente
-      const ingredientData = {
-        name: newProduct.ingredient_name,
-        description: newProduct.description,
-        category_id: 1, // Por defecto categoría 1
-        base_price: parseFloat(newProduct.purchase_price) || 0,
-        unit_measure: newProduct.unit_measure,
-        min_stock_level: 10, // Valor por defecto
-        active: true,
-        // Incluir los alérgenos
-        alerg_gluten: newProduct.alergeno_gluten,
-        alerg_crustaceos: newProduct.alergeno_crustaceos,
-        alerg_huevos: newProduct.alergeno_huevos,
-        alerg_pescado: newProduct.alergeno_pescado,
-        alerg_cacahuetes: newProduct.alergeno_cacahuetes,
-        alerg_soja: newProduct.alergeno_soja,
-        alerg_leche: newProduct.alergeno_leche,
-        alerg_frutos: newProduct.alergeno_frutos_cascara,
-        alerg_apio: newProduct.alergeno_apio,
-        alerg_mostaza: newProduct.alergeno_mostaza,
-        alerg_sesamo: newProduct.alergeno_sesamo,
-        alerg_sulfitos: newProduct.alergeno_dioxido_azufre_sulfitos,
-        alerg_altramuces: newProduct.alergeno_altramuces,
-        alerg_moluscos: newProduct.alergeno_moluscos
-      };
+      // Obtener información del ingrediente seleccionado
+      const selectedIngredient = ingredients.find(ing => ing.id === parseInt(newProduct.ingredient_id));
+      if (!selectedIngredient) {
+        throw new Error('Ingrediente no encontrado');
+      }
 
-      const { data: ingredient, error: ingredientError } = await supabase
-        .from('ingredients')
-        .insert([ingredientData])
-        .select()
+      // Obtener información del proveedor seleccionado
+      const selectedSupplier = availableSuppliers.find(sup => sup.id === parseInt(newProduct.supplier_id));
+      if (!selectedSupplier) {
+        throw new Error('Proveedor no encontrado');
+      }
+
+      // Obtener información del supplier_ingredient para obtener precio
+      const { data: supplierIngredient, error: supplierIngredientError } = await supabase
+        .from('supplier_ingredients')
+        .select('*')
+        .eq('supplier_id', newProduct.supplier_id)
+        .eq('ingredient_id', newProduct.ingredient_id)
         .single();
 
-      if (ingredientError) throw ingredientError;
+      if (supplierIngredientError) {
+        throw new Error('No se encontró información del ingrediente en el proveedor');
+      }
 
-      // Luego crear el item de inventario
+      // Crear el item de inventario
       const inventoryData = {
-        ingredient_id: ingredient.id,
+        ingredient_id: parseInt(newProduct.ingredient_id),
         family_id: parseInt(newProduct.family_id),
         subfamily_id: newProduct.subfamily_id ? parseInt(newProduct.subfamily_id) : null,
-        quantity: parseFloat(newProduct.quantity),
-        purchase_price: parseFloat(newProduct.purchase_price),
+        supplier_id: parseInt(newProduct.supplier_id),
+        quantity: parseFloat(newProduct.quantity) || 0,
+        purchase_price: supplierIngredient.supplier_price || 0,
         expiry_date: newProduct.expiry_date,
-        batch_number: newProduct.batch_number,
-        supplier_id: newProduct.supplier_id ? parseInt(newProduct.supplier_id) : null,
-        supplier_ingredient_id: newProduct.supplier_ingredient_id ? parseInt(newProduct.supplier_ingredient_id) : null,
-        supplier_lot_number: newProduct.supplier_lot_number || null,
-        supplier_price: newProduct.supplier_price ? parseFloat(newProduct.supplier_price) : null,
-        delivery_date: newProduct.delivery_date || null,
-        invoice_number: newProduct.invoice_number || null
+        batch_number: newProduct.batch_number
       };
 
       const { error: inventoryError } = await supabase
@@ -459,41 +395,10 @@ const InventoryManagement = () => {
       if (inventoryError) throw inventoryError;
 
       await fetchInventory();
-      setShowNewProductModal(false);
-      setNewProduct({
-        ingredient_name: '',
-        description: '',
-        family_id: '',
-        subfamily_id: '',
-        quantity: '',
-        purchase_price: '',
-        expiry_date: '',
-        batch_number: '',
-        supplier_id: '',
-        supplier_ingredient_id: '',
-        supplier_lot_number: '',
-        supplier_price: '',
-        delivery_date: '',
-        invoice_number: '',
-        unit_measure: '',
-        alergeno_gluten: 0,
-        alergeno_crustaceos: 0,
-        alergeno_huevos: 0,
-        alergeno_pescado: 0,
-        alergeno_cacahuetes: 0,
-        alergeno_soja: 0,
-        alergeno_leche: 0,
-        alergeno_frutos_cascara: 0,
-        alergeno_apio: 0,
-        alergeno_mostaza: 0,
-        alergeno_sesamo: 0,
-        alergeno_dioxido_azufre_sulfitos: 0,
-        alergeno_altramuces: 0,
-        alergeno_moluscos: 0
-      });
+      handleCloseModal();
     } catch (err) {
       console.error('Error al crear el producto:', err);
-      setError('Error al crear el producto');
+      setError('Error al crear el producto: ' + (err.message || 'Error desconocido'));
     }
   };
 
@@ -504,25 +409,53 @@ const InventoryManagement = () => {
     }
   };
 
+  // Función para cerrar el modal y resetear el formulario
+  const handleCloseModal = () => {
+    setShowNewProductModal(false);
+      setNewProduct({
+        ingredient_id: '',
+        family_id: '',
+        subfamily_id: '',
+        supplier_id: '',
+        quantity: '',
+        expiry_date: '',
+        batch_number: ''
+      });
+    setAvailableSuppliers([]);
+  };
+
   const getAllergens = (item) => {
     const allergens = [];
     const ingredient = item.ingredients;
-    if (!ingredient) return <span className="text-xs text-gray-500">Sin alérgenos</span>;
     
-    if (ingredient.alerg_gluten === 1) allergens.push({ name: 'gluten', file: 'alerg_gluten.png' });
-    if (ingredient.alerg_crustaceos === 1) allergens.push({ name: 'crustáceos', file: 'alerg_crustaceos.png' });
-    if (ingredient.alerg_huevos === 1) allergens.push({ name: 'huevos', file: 'alerg_huevos.png' });
-    if (ingredient.alerg_pescado === 1) allergens.push({ name: 'pescado', file: 'alerg_pescado.png' });
-    if (ingredient.alerg_cacahuetes === 1) allergens.push({ name: 'cacahuetes', file: 'alerg_cacahuetes.png' });
-    if (ingredient.alerg_soja === 1) allergens.push({ name: 'soja', file: 'alerg_soja.png' });
-    if (ingredient.alerg_leche === 1) allergens.push({ name: 'leche', file: 'alerg_leche.png' });
-    if (ingredient.alerg_frutos === 1) allergens.push({ name: 'frutos de cáscara', file: 'alerg_frutos.png' });
-    if (ingredient.alerg_apio === 1) allergens.push({ name: 'apio', file: 'alerg_apio.png' });
-    if (ingredient.alerg_mostaza === 1) allergens.push({ name: 'mostaza', file: 'alerg_mostaza.png' });
-    if (ingredient.alerg_sesamo === 1) allergens.push({ name: 'sésamo', file: 'alerg_sesamo.png' });
-    if (ingredient.alerg_sulfitos === 1) allergens.push({ name: 'sulfitos', file: 'alerg_sulfitos.png' });
-    if (ingredient.alerg_altramuces === 1) allergens.push({ name: 'altramuces', file: 'alerg_altramuces.png' });
-    if (ingredient.alerg_moluscos === 1) allergens.push({ name: 'moluscos', file: 'alerg_moluscos.png' });
+    if (!ingredient) {
+      return <span className="text-xs text-gray-500">Sin ingrediente</span>;
+    }
+    
+    // Lista de alérgenos con sus archivos
+    const allergenList = [
+      { key: 'alerg_gluten', name: 'gluten', file: 'alerg_gluten.png' },
+      { key: 'alerg_crustaceos', name: 'crustáceos', file: 'alerg_crustaceos.png' },
+      { key: 'alerg_huevos', name: 'huevos', file: 'alerg_huevos.png' },
+      { key: 'alerg_pescado', name: 'pescado', file: 'alerg_pescado.png' },
+      { key: 'alerg_cacahuetes', name: 'cacahuetes', file: 'alerg_cacahuetes.png' },
+      { key: 'alerg_soja', name: 'soja', file: 'alerg_soja.png' },
+      { key: 'alerg_leche', name: 'leche', file: 'alerg_leche.png' },
+      { key: 'alerg_frutos', name: 'frutos de cáscara', file: 'alerg_frutos.png' },
+      { key: 'alerg_apio', name: 'apio', file: 'alerg_apio.png' },
+      { key: 'alerg_mostaza', name: 'mostaza', file: 'alerg_mostaza.png' },
+      { key: 'alerg_sesamo', name: 'sésamo', file: 'alerg_sesamo.png' },
+      { key: 'alerg_sulfitos', name: 'sulfitos', file: 'alerg_sulfitos.png' },
+      { key: 'alerg_altramuces', name: 'altramuces', file: 'alerg_altramuces.png' },
+      { key: 'alerg_moluscos', name: 'moluscos', file: 'alerg_moluscos.png' }
+    ];
+    
+    // Verificar cada alérgeno
+    allergenList.forEach(allergen => {
+      if (ingredient[allergen.key] === 1 || ingredient[allergen.key] === true) {
+        allergens.push(allergen);
+      }
+    });
     
     if (allergens.length === 0) {
       return <span className="text-xs text-gray-500">Sin alérgenos</span>;
@@ -531,14 +464,30 @@ const InventoryManagement = () => {
     return (
       <div className="flex flex-wrap gap-1">
         {allergens.map((allergen, index) => (
-          <img
-            key={index}
-            src={`/${allergen.file}`}
-            alt={allergen.name}
-            className="w-6 h-6 object-contain"
-            title={allergen.name}
-          />
+          <div key={index} className="flex items-center">
+            <img
+              src={`/${allergen.file}`}
+              alt={allergen.name}
+              className="w-6 h-6 object-contain"
+              title={allergen.name}
+              onError={(e) => {
+                console.log('Error loading image:', allergen.file);
+                // Reemplazar con texto
+                e.target.style.display = 'none';
+                const parent = e.target.parentNode;
+                const textSpan = document.createElement('span');
+                textSpan.className = 'text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full';
+                textSpan.textContent = allergen.name.charAt(0).toUpperCase();
+                textSpan.title = allergen.name;
+                parent.appendChild(textSpan);
+              }}
+            />
+          </div>
         ))}
+        {/* Indicador temporal de debug */}
+        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+          {allergens.length} alérgeno{allergens.length > 1 ? 's' : ''}
+        </span>
       </div>
     );
   };
@@ -658,14 +607,14 @@ const InventoryManagement = () => {
       {showNewProductModal && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
-          onClick={(e) => handleModalBackdropClick(e, () => setShowNewProductModal(false))}
+          onClick={(e) => handleModalBackdropClick(e, handleCloseModal)}
         >
           <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white p-4 sm:p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-900">Nuevo Producto</h2>
                 <button
-                  onClick={() => setShowNewProductModal(false)}
+                  onClick={handleCloseModal}
                   className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -677,29 +626,77 @@ const InventoryManagement = () => {
             <div className="p-4 sm:p-6">
               <form onSubmit={handleNewProductSubmit} className="space-y-6">
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre del Ingrediente</label>
-                    <input
-                      type="text"
-                      name="ingredient_name"
-                      value={newProduct.ingredient_name}
-                      onChange={handleNewProductChange}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="Ej: Tomate fresco"
-                      required
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Seleccionar Ingrediente</label>
+                      <select
+                        name="ingredient_id"
+                        value={newProduct.ingredient_id}
+                        onChange={handleIngredientChange}
+                        className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        required
+                      >
+                        <option value="">Seleccionar ingrediente</option>
+                        {ingredients.map(ingredient => (
+                          <option key={ingredient.id} value={ingredient.id}>
+                            {ingredient.name} - {ingredient.unit_measure}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Selecciona un ingrediente existente para agregar al inventario
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Cantidad</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          name="quantity"
+                          value={newProduct.quantity}
+                          onChange={handleNewProductChange}
+                          className="flex-1 border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="0"
+                          required
+                          min="0"
+                          step="0.01"
+                        />
+                        <span className="flex items-center px-3 text-sm text-gray-500 bg-gray-50 border border-gray-300 rounded-lg">
+                          {(() => {
+                            const selectedIngredient = ingredients.find(ing => ing.id === parseInt(newProduct.ingredient_id));
+                            return selectedIngredient?.unit_measure || 'unidad';
+                          })()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Descripción</label>
-                    <textarea
-                      name="description"
-                      value={newProduct.description}
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Seleccionar Proveedor</label>
+                    <select
+                      name="supplier_id"
+                      value={newProduct.supplier_id}
                       onChange={handleNewProductChange}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      rows="3"
-                      placeholder="Descripción opcional del ingrediente"
-                    />
+                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                      disabled={!newProduct.ingredient_id || availableSuppliers.length === 0}
+                      required
+                    >
+                      <option value="">
+                        {!newProduct.ingredient_id 
+                          ? 'Primero selecciona un ingrediente' 
+                          : availableSuppliers.length === 0 
+                            ? 'No hay proveedores disponibles para este ingrediente'
+                            : 'Seleccionar proveedor'
+                        }
+                      </option>
+                      {availableSuppliers.map(supplier => (
+                        <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Solo se muestran proveedores que tienen este ingrediente disponible
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -736,140 +733,6 @@ const InventoryManagement = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Proveedor</label>
-                    <select
-                      name="supplier_id"
-                      value={newProduct.supplier_id}
-                      onChange={handleNewProductChange}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      required
-                    >
-                      <option value="">Seleccionar proveedor</option>
-                      {suppliers.map(supplier => (
-                        <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Cantidad</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          name="quantity"
-                          value={newProduct.quantity}
-                          onChange={handleNewProductChange}
-                          className="flex-1 border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="0"
-                          required
-                          min="0"
-                          step="0.01"
-                        />
-                        <select
-                          name="unit_measure"
-                          value={newProduct.unit_measure}
-                          onChange={handleNewProductChange}
-                          className="w-32 sm:w-36 md:w-40 border border-gray-300 rounded-lg shadow-sm py-3 px-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          required
-                        >
-                          <option value="">Unidad</option>
-                          {unitMeasures.map((unit, index) => (
-                            <option key={index} value={unit}>{unit}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Precio de Compra (€)</label>
-                      <input
-                        type="number"
-                        name="purchase_price"
-                        value={newProduct.purchase_price}
-                        onChange={handleNewProductChange}
-                        className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="0.00"
-                        required
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Información del proveedor */}
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Información del Proveedor</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Proveedor</label>
-                        <select
-                          name="supplier_id"
-                          value={newProduct.supplier_id}
-                          onChange={handleNewProductChange}
-                          className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                          <option value="">Seleccionar proveedor</option>
-                          {suppliers.map(supplier => (
-                            <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Precio del Proveedor (€)</label>
-                        <input
-                          type="number"
-                          name="supplier_price"
-                          value={newProduct.supplier_price}
-                          onChange={handleNewProductChange}
-                          className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Lote del Proveedor</label>
-                        <input
-                          type="text"
-                          name="supplier_lot_number"
-                          value={newProduct.supplier_lot_number}
-                          onChange={handleNewProductChange}
-                          className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="Ej: LOTE-2025-001"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha de Entrega</label>
-                        <input
-                          type="date"
-                          name="delivery_date"
-                          value={newProduct.delivery_date}
-                          onChange={handleNewProductChange}
-                          className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Número de Factura</label>
-                      <input
-                        type="text"
-                        name="invoice_number"
-                        value={newProduct.invoice_number}
-                        onChange={handleNewProductChange}
-                        className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="Ej: FACT-2025-001"
-                      />
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha de Caducidad</label>
@@ -897,241 +760,58 @@ const InventoryManagement = () => {
                     </div>
                   </div>
 
-                  <div className="mt-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-4">Alérgenos</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_gluten"
-                          checked={newProduct.alergeno_gluten === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox gluten cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_gluten: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Gluten</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_crustaceos"
-                          checked={newProduct.alergeno_crustaceos === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox crustaceos cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_crustaceos: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Crustáceos</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_huevos"
-                          checked={newProduct.alergeno_huevos === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox huevos cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_huevos: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Huevos</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_pescado"
-                          checked={newProduct.alergeno_pescado === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox pescado cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_pescado: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Pescado</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_cacahuetes"
-                          checked={newProduct.alergeno_cacahuetes === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox cacahuetes cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_cacahuetes: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Cacahuetes</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_soja"
-                          checked={newProduct.alergeno_soja === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox soja cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_soja: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Soja</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_leche"
-                          checked={newProduct.alergeno_leche === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox leche cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_leche: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Leche</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_frutos_cascara"
-                          checked={newProduct.alergeno_frutos_cascara === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox frutos cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_frutos_cascara: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Frutos de cáscara</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_apio"
-                          checked={newProduct.alergeno_apio === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox apio cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_apio: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Apio</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_mostaza"
-                          checked={newProduct.alergeno_mostaza === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox mostaza cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_mostaza: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Mostaza</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_sesamo"
-                          checked={newProduct.alergeno_sesamo === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox sesamo cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_sesamo: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Sésamo</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_dioxido_azufre_sulfitos"
-                          checked={newProduct.alergeno_dioxido_azufre_sulfitos === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox sulfitos cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_dioxido_azufre_sulfitos: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Dióxido de azufre y sulfitos</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_altramuces"
-                          checked={newProduct.alergeno_altramuces === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox altramuces cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_altramuces: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Altramuces</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="alergeno_moluscos"
-                          checked={newProduct.alergeno_moluscos === 1}
-                          onChange={(e) => {
-                            console.log('Checkbox moluscos cambiado:', e.target.checked);
-                            setNewProduct(prev => ({
-                              ...prev,
-                              alergeno_moluscos: e.target.checked ? 1 : 0
-                            }));
-                          }}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label className="ml-2 block text-sm text-gray-900">Moluscos</label>
-                      </div>
+                  {/* Información del ingrediente seleccionado */}
+                  {newProduct.ingredient_id && (
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-3">Información del Ingrediente</h3>
+                      {(() => {
+                        const selectedIngredient = ingredients.find(ing => ing.id === parseInt(newProduct.ingredient_id));
+                        return selectedIngredient ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-600">Nombre:</span>
+                              <p className="text-gray-900">{selectedIngredient.name}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Unidad de medida:</span>
+                              <p className="text-gray-900">{selectedIngredient.unit_measure}</p>
+                            </div>
+                            {selectedIngredient.description && (
+                              <div className="sm:col-span-2">
+                                <span className="font-medium text-gray-600">Descripción:</span>
+                                <p className="text-gray-900">{selectedIngredient.description}</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
-                  </div>
+                  )}
+
+                  {/* Información del proveedor seleccionado */}
+                  {newProduct.supplier_id && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-3">Información del Proveedor</h3>
+                      {(() => {
+                        const selectedSupplier = availableSuppliers.find(sup => sup.id === parseInt(newProduct.supplier_id));
+                        return selectedSupplier ? (
+                          <div className="text-sm">
+                            <span className="font-medium text-gray-600">Proveedor:</span>
+                            <p className="text-gray-900">{selectedSupplier.name}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              La cantidad, precio y demás información se obtendrán automáticamente de la configuración del proveedor.
+                            </p>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-gray-200">
                   <button
                     type="button"
-                    onClick={() => setShowNewProductModal(false)}
+                    onClick={handleCloseModal}
                     className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                   >
                     Cancelar
@@ -1219,33 +899,40 @@ const InventoryManagement = () => {
 
               {/* Información principal */}
                 <div className="space-y-3 mb-6">
-                  <div className="flex items-center space-x-3 py-2">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8-4" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                  <div className="text-xs text-gray-500 mb-1">Cantidad</div>
-                  {editingItem === item.id ? (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="number"
-                        name="quantity"
-                        value={editForm.quantity}
-                        onChange={handleInputChange}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
-                        min="0"
-                        step="0.01"
-                      />
-                      <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
-                    </div>
-                  ) : (
+                   <div className="flex items-center space-x-3 py-2">
+                     <div className="flex-shrink-0">
+                       <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                       </svg>
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <div className="text-xs text-gray-500 mb-1">Proveedor</div>
+                       <div className="text-sm font-medium text-gray-700 mb-2">
+                         {(() => {
+                           console.log('Item suppliers data:', item.suppliers);
+                           return item.suppliers?.name || 'Sin proveedor';
+                         })()}
+                       </div>
+                      <div className="text-xs text-gray-500 mb-1">Cantidad</div>
+                      {editingItem === item.id ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="number"
+                            name="quantity"
+                            value={editForm.quantity}
+                            onChange={handleInputChange}
+                            className="flex-1 px-2 py-1 border rounded text-sm"
+                            min="0"
+                            step="0.01"
+                          />
+                          <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
+                        </div>
+                      ) : (
                         <div className="text-sm font-medium text-gray-900">
                           {item.quantity} <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
                   </div>
                   
                   <div className="flex items-center space-x-3 py-2">
@@ -1256,19 +943,7 @@ const InventoryManagement = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-gray-500 mb-1">Precio de Compra</div>
-                  {editingItem === item.id ? (
-                    <input
-                      type="number"
-                      name="purchase_price"
-                      value={editForm.purchase_price}
-                      onChange={handleInputChange}
-                      className="w-full px-2 py-1 border rounded text-sm"
-                      min="0"
-                      step="0.01"
-                    />
-                  ) : (
                         <div className="text-sm font-medium text-gray-900">{item.purchase_price} €</div>
-                  )}
                 </div>
               </div>
 
@@ -1392,152 +1067,7 @@ const InventoryManagement = () => {
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-gray-500 mb-1">Alérgenos</div>
                       <div className="flex-1">
-                        {editingItem === item.id ? (
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_gluten"
-                                checked={editForm.alerg_gluten === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Gluten</label>
-                </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_crustaceos"
-                                checked={editForm.alerg_crustaceos === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Crustáceos</label>
-              </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_huevos"
-                                checked={editForm.alerg_huevos === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Huevos</label>
-            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_pescado"
-                                checked={editForm.alerg_pescado === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Pescado</label>
-        </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_cacahuetes"
-                                checked={editForm.alerg_cacahuetes === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Cacahuetes</label>
-      </div>
-                            <div className="flex items-center">
-                      <input
-                                type="checkbox"
-                                name="alerg_soja"
-                                checked={editForm.alerg_soja === 1}
-                        onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Soja</label>
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_leche"
-                                checked={editForm.alerg_leche === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Leche</label>
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_frutos"
-                                checked={editForm.alerg_frutos === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Frutos cáscara</label>
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_apio"
-                                checked={editForm.alerg_apio === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Apio</label>
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_mostaza"
-                                checked={editForm.alerg_mostaza === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Mostaza</label>
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_sesamo"
-                                checked={editForm.alerg_sesamo === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Sésamo</label>
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_sulfitos"
-                                checked={editForm.alerg_sulfitos === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Sulfitos</label>
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_altramuces"
-                                checked={editForm.alerg_altramuces === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Altramuces</label>
-                            </div>
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="alerg_moluscos"
-                                checked={editForm.alerg_moluscos === 1}
-                                onChange={handleInputChange}
-                                className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              />
-                              <label className="ml-1 text-gray-700">Moluscos</label>
-                            </div>
-                          </div>
-                        ) : (
-                          getAllergens(item)
-                        )}
+                        {getAllergens(item)}
                       </div>
                     </div>
                   </div>
@@ -1643,34 +1173,53 @@ const InventoryManagement = () => {
 
                   {/* Información de inventario */}
                   <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8-4" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs text-gray-500 mb-1">Cantidad</div>
-                    {editingItem === item.id ? (
-                          <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          name="quantity"
-                          value={editForm.quantity}
-                          onChange={handleInputChange}
-                              className="flex-1 px-2 py-1 border rounded text-sm"
-                          min="0"
-                          step="0.01"
-                        />
-                            <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
-                      </div>
-                    ) : (
-                          <div className="text-sm font-medium text-gray-900">
-                            {item.quantity} <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                     {/* Proveedor */}
+                     <div className="flex items-center space-x-3">
+                       <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                         <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                         </svg>
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <div className="text-xs text-gray-500 mb-1">Proveedor</div>
+                         <div className="text-sm font-medium text-gray-700">
+                           {(() => {
+                             console.log('Item suppliers data (desktop):', item.suppliers);
+                             return item.suppliers?.name || 'Sin proveedor';
+                           })()}
+                         </div>
+                       </div>
+                     </div>
+
+                     {/* Cantidad */}
+                     <div className="flex items-center space-x-3">
+                       <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                         <svg className="h-4 w-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8-4" />
+                         </svg>
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <div className="text-xs text-gray-500 mb-1">Cantidad</div>
+                         {editingItem === item.id ? (
+                           <div className="flex items-center space-x-2">
+                             <input
+                               type="number"
+                               name="quantity"
+                               value={editForm.quantity}
+                               onChange={handleInputChange}
+                               className="flex-1 px-2 py-1 border rounded text-sm"
+                               min="0"
+                               step="0.01"
+                             />
+                             <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
+                           </div>
+                         ) : (
+                           <div className="text-sm font-medium text-gray-900">
+                             {item.quantity} <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
+                           </div>
+                         )}
+                       </div>
+                     </div>
                     
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
@@ -1680,19 +1229,7 @@ const InventoryManagement = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-gray-500 mb-1">Precio de Compra</div>
-                    {editingItem === item.id ? (
-                      <input
-                        type="number"
-                        name="purchase_price"
-                        value={editForm.purchase_price}
-                        onChange={handleInputChange}
-                            className="w-full px-2 py-1 border rounded text-sm"
-                        min="0"
-                        step="0.01"
-                      />
-                    ) : (
                           <div className="text-sm font-medium text-gray-900">{item.purchase_price} €</div>
-                        )}
                       </div>
                     </div>
                     
@@ -1720,12 +1257,12 @@ const InventoryManagement = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <svg className="h-4 w-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                      </div>
+                     <div className="flex items-center space-x-3">
+                       <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                         <svg className="h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                         </svg>
+                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-gray-500 mb-1">Número de Lote</div>
                     {editingItem === item.id ? (
@@ -1753,152 +1290,7 @@ const InventoryManagement = () => {
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-gray-500 mb-1">Alérgenos</div>
                         <div className="flex-1">
-                          {editingItem === item.id ? (
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_gluten"
-                                  checked={editForm.alerg_gluten === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Gluten</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_crustaceos"
-                                  checked={editForm.alerg_crustaceos === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Crustáceos</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_huevos"
-                                  checked={editForm.alerg_huevos === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Huevos</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_pescado"
-                                  checked={editForm.alerg_pescado === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Pescado</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_cacahuetes"
-                                  checked={editForm.alerg_cacahuetes === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Cacahuetes</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_soja"
-                                  checked={editForm.alerg_soja === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Soja</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_leche"
-                                  checked={editForm.alerg_leche === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Leche</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_frutos"
-                                  checked={editForm.alerg_frutos === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Frutos cáscara</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_apio"
-                                  checked={editForm.alerg_apio === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Apio</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_mostaza"
-                                  checked={editForm.alerg_mostaza === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Mostaza</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_sesamo"
-                                  checked={editForm.alerg_sesamo === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Sésamo</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_sulfitos"
-                                  checked={editForm.alerg_sulfitos === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Sulfitos</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_altramuces"
-                                  checked={editForm.alerg_altramuces === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Altramuces</label>
-                              </div>
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  name="alerg_moluscos"
-                                  checked={editForm.alerg_moluscos === 1}
-                                  onChange={handleInputChange}
-                                  className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                />
-                                <label className="ml-1 text-gray-700">Moluscos</label>
-                              </div>
-                            </div>
-                          ) : (
-                            getAllergens(item)
-                          )}
+                          {getAllergens(item)}
                         </div>
                       </div>
                     </div>

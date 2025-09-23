@@ -90,6 +90,22 @@ export const database = {
     }
   },
 
+  // Crear categoría
+  async createCategory(categoryData) {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([categoryData])
+        .select()
+      
+      if (error) throw error
+      return { success: true, data: data[0] }
+    } catch (error) {
+      console.error('Error al crear categoría:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
   // Obtener ingredientes
   async getIngredients() {
     try {
@@ -162,8 +178,7 @@ export const database = {
   // Obtener inventario
   async getInventory() {
     try {
-      // Primero intentar con la nueva estructura (después de migración)
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from('inventory')
         .select(`
           *,
@@ -189,51 +204,11 @@ export const database = {
           ),
           inventory_families(name),
           inventory_subfamilies(name),
-          suppliers(
-            name,
-            contact_person,
-            email,
-            phone
-          )
+          suppliers(name)
         `)
         .order('created_at', { ascending: false })
       
-      // Si hay error, usar la estructura original
-      if (error) {
-        console.log('Usando estructura original de inventario...')
-        const result = await supabase
-          .from('inventory')
-          .select(`
-            *,
-            ingredients(
-              name, 
-              unit_measure, 
-              min_stock_level,
-              base_price,
-              alerg_gluten,
-              alerg_crustaceos,
-              alerg_huevos,
-              alerg_pescado,
-              alerg_cacahuetes,
-              alerg_soja,
-              alerg_leche,
-              alerg_frutos,
-              alerg_apio,
-              alerg_mostaza,
-              alerg_sesamo,
-              alerg_sulfitos,
-              alerg_altramuces,
-              alerg_moluscos
-            ),
-            inventory_families(name),
-            inventory_subfamilies(name)
-          `)
-          .order('created_at', { ascending: false })
-        
-        if (result.error) throw result.error
-        return { success: true, data: result.data }
-      }
-      
+      if (error) throw error
       return { success: true, data }
     } catch (error) {
       console.error('Error al obtener inventario:', error)
@@ -399,7 +374,24 @@ export const database = {
         .from('supplier_ingredients')
         .select(`
           *,
-          ingredients(name, unit_measure)
+          ingredients(
+            name, 
+            unit_measure,
+            alerg_gluten,
+            alerg_crustaceos,
+            alerg_huevos,
+            alerg_pescado,
+            alerg_cacahuetes,
+            alerg_soja,
+            alerg_leche,
+            alerg_frutos,
+            alerg_apio,
+            alerg_mostaza,
+            alerg_sesamo,
+            alerg_sulfitos,
+            alerg_altramuces,
+            alerg_moluscos
+          )
         `)
         .eq('supplier_id', supplierId)
         .order('created_at', { ascending: false })

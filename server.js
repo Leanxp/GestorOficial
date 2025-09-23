@@ -690,7 +690,7 @@ app.get('/api/suppliers/:id/ingredients', async (req, res) => {
       SELECT 
         si.id,
         i.name as ingredient_name,
-        si.price,
+        si.supplier_price,
         si.notes,
         si.updated_at
       FROM supplier_ingredients si
@@ -709,7 +709,7 @@ app.get('/api/suppliers/:id/ingredients', async (req, res) => {
 // Ruta para agregar un nuevo ingrediente a un proveedor
 app.post('/api/suppliers/:id/ingredients', async (req, res) => {
   const { id } = req.params;
-  const { ingredient_id, price, notes } = req.body;
+  const { ingredient_id, supplier_price, notes } = req.body;
 
   try {
     // Verificar que el proveedor existe
@@ -753,8 +753,8 @@ app.post('/api/suppliers/:id/ingredients', async (req, res) => {
 
     // Insertar el nuevo ingrediente del proveedor
     await db.promise().query(
-      'INSERT INTO supplier_ingredients (supplier_id, ingredient_id, price, notes) VALUES (?, ?, ?, ?)',
-      [id, ingredient_id, price, notes]
+      'INSERT INTO supplier_ingredients (supplier_id, ingredient_id, supplier_price, notes) VALUES (?, ?, ?, ?)',
+      [id, ingredient_id, supplier_price, notes]
     );
 
     res.json({ 
