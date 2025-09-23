@@ -83,7 +83,6 @@ const SuppliersManagement = () => {
   });
   const [ingredients, setIngredients] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [expandedSupplier, setExpandedSupplier] = useState(null);
   const [supplierIngredients, setSupplierIngredients] = useState({});
 
   // Hook para manejar el teclado

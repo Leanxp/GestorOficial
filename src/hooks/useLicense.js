@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, createContext } from 'react'
+import { useState, useEffect, useContext, createContext, useCallback } from 'react'
 import { useAuth } from './useAuth'
 import { database } from '../config/supabase'
 
@@ -18,7 +18,7 @@ export const LicenseProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   // Cargar información de licencia del usuario
-  const loadUserLicense = async () => {
+  const loadUserLicense = useCallback(async () => {
     if (!user?.email) {
       setLoading(false)
       return
@@ -54,7 +54,7 @@ export const LicenseProvider = ({ children }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     loadUserLicense()
