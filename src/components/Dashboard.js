@@ -8,7 +8,7 @@ import LicenseManagement from './LicenseManagement';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
+  const { signOut } = useAuth();
   const { isAdmin, getLicenseInfo } = useLicense();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
