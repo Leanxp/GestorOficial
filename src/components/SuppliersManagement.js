@@ -84,6 +84,9 @@ const SuppliersManagement = () => {
   const [ingredients, setIngredients] = useState([]);
   const [categories, setCategories] = useState([]);
   const [supplierIngredients, setSupplierIngredients] = useState({});
+  const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
+  const [filteredIngredients, setFilteredIngredients] = useState([]);
+  const [showIngredientDropdown, setShowIngredientDropdown] = useState(false);
 
   // Hook para manejar el teclado
   useEffect(() => {
@@ -121,6 +124,18 @@ const SuppliersManagement = () => {
     fetchIngredients();
     fetchCategories();
   }, []);
+
+  // Filtrar ingredientes para el autocompletar
+  useEffect(() => {
+    if (ingredientSearchTerm.trim() === '') {
+      setFilteredIngredients([]);
+    } else {
+      const filtered = ingredients.filter(ingredient =>
+        ingredient.name.toLowerCase().includes(ingredientSearchTerm.toLowerCase())
+      );
+      setFilteredIngredients(filtered);
+    }
+  }, [ingredientSearchTerm, ingredients]);
 
   const fetchIngredients = async () => {
     try {
@@ -233,6 +248,9 @@ const SuppliersManagement = () => {
           supplier_price: '',
           notes: ''
         });
+        // Reset autocomplete fields
+        setIngredientSearchTerm('');
+        setShowIngredientDropdown(false);
         // Refresh the supplier's ingredients
         const refreshResult = await database.getSupplierIngredients(selectedSupplierId);
         if (refreshResult.success) {
@@ -247,6 +265,37 @@ const SuppliersManagement = () => {
     } catch (err) {
       console.error('Error adding ingredient:', err);
     }
+  };
+
+  // Funciones para el autocompletar de ingredientes
+  const handleIngredientSearchChange = (e) => {
+    const value = e.target.value;
+    setIngredientSearchTerm(value);
+    setShowIngredientDropdown(true);
+    
+    // Si se limpia el campo, resetear la selección
+    if (value === '') {
+      setNewIngredient(prev => ({ ...prev, ingredient_id: '' }));
+    }
+  };
+
+  const handleIngredientSelect = (ingredient) => {
+    setNewIngredient(prev => ({ ...prev, ingredient_id: ingredient.id }));
+    setIngredientSearchTerm(ingredient.name);
+    setShowIngredientDropdown(false);
+  };
+
+  const handleIngredientInputFocus = () => {
+    if (ingredientSearchTerm.trim() !== '') {
+      setShowIngredientDropdown(true);
+    }
+  };
+
+  const handleIngredientInputBlur = () => {
+    // Delay para permitir el click en las opciones
+    setTimeout(() => {
+      setShowIngredientDropdown(false);
+    }, 200);
   };
 
   const handleCreateIngredient = async (e) => {
@@ -1009,24 +1058,47 @@ const SuppliersManagement = () => {
                   </button>
                 </div>
                 <div className="relative">
-                <select
-                  value={newIngredient.ingredient_id}
-                  onChange={(e) => setNewIngredient({ ...newIngredient, ingredient_id: e.target.value })}
-                    className="w-full border-2 border-gray-200 rounded-xl py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 appearance-none bg-white"
-                  required
-                >
-                    <option value="">🔍 Buscar ingrediente...</option>
-                  {ingredients.map((ingredient) => (
-                    <option key={ingredient.id} value={ingredient.id}>
-                      {ingredient.name}
-                    </option>
-                  ))}
-                </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+                  <input
+                    type="text"
+                    value={ingredientSearchTerm}
+                    onChange={handleIngredientSearchChange}
+                    onFocus={handleIngredientInputFocus}
+                    onBlur={handleIngredientInputBlur}
+                    className="w-full border-2 border-gray-200 rounded-xl py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                    placeholder="🔍 Buscar ingrediente..."
+                    required
+                  />
+                  
+                  {/* Dropdown de resultados */}
+                  {showIngredientDropdown && filteredIngredients.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      {filteredIngredients.map((ingredient) => (
+                        <div
+                          key={ingredient.id}
+                          onClick={() => handleIngredientSelect(ingredient)}
+                          className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-900">
+                              {ingredient.name}
+                            </span>
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                              {ingredient.unit_measure}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Mensaje cuando no hay resultados */}
+                  {showIngredientDropdown && ingredientSearchTerm.trim() !== '' && filteredIngredients.length === 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg">
+                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                        No se encontraron ingredientes
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1127,6 +1199,9 @@ const SuppliersManagement = () => {
                     onClick={() => {
                       setSelectedSupplierId(selectedSupplierForView.id);
                       setShowAddIngredientModal(true);
+                      // Reset autocomplete fields
+                      setIngredientSearchTerm('');
+                      setShowIngredientDropdown(false);
                     }}
                     className="bg-green-600 text-white px-3 py-2 sm:px-4 rounded-xl hover:bg-green-700 text-sm font-medium transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl flex items-center space-x-1 sm:space-x-2"
                   >
@@ -1150,29 +1225,29 @@ const SuppliersManagement = () => {
             {/* Contenido del modal */}
             <div className="p-6 max-h-[60vh] overflow-y-auto">
               {supplierIngredients[selectedSupplierForView.id]?.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
                   {supplierIngredients[selectedSupplierForView.id].map((ingredient, index) => (
-                    <div key={ingredient.id} className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-                          <h3 className="text-lg font-bold text-gray-900 break-words">
+                    <div key={ingredient.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200 group">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0"></div>
+                          <h3 className="text-base font-semibold text-gray-900 break-words sm:truncate">
                             {ingredient.ingredients?.name || 'N/A'}
                           </h3>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-indigo-600">
+                        <div className="flex items-center justify-between sm:justify-end space-x-3 sm:ml-4">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-indigo-600">
                               {ingredient.supplier_price} €
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              por unidad
-                            </div>
+                            </span>
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                              {ingredient.ingredients?.unit_measure || 'unidad'}
+                            </span>
                           </div>
-                          <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="flex items-center space-x-1">
                             <button
                               onClick={() => openEditIngredientModal(ingredient)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               aria-label="Editar ingrediente"
                             >
                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1181,7 +1256,7 @@ const SuppliersManagement = () => {
                             </button>
                             <button
                               onClick={() => openDeleteIngredientModal(ingredient)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               aria-label="Eliminar ingrediente"
                             >
                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1190,22 +1265,6 @@ const SuppliersManagement = () => {
                             </button>
                           </div>
                         </div>
-                      </div>
-                      
-                      {ingredient.notes && (
-                        <div className="mb-3">
-                          <div className="text-xs text-gray-500 mb-1">Notas:</div>
-                          <div className="text-sm text-gray-700 bg-gray-100 rounded-lg px-3 py-2">
-                            {ingredient.notes}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>Última actualización:</span>
-                        <span className="font-medium">
-                          {ingredient.updated_at ? new Date(ingredient.updated_at).toLocaleDateString() : '-'}
-                        </span>
                       </div>
                     </div>
                   ))}
@@ -1223,6 +1282,9 @@ const SuppliersManagement = () => {
                     onClick={() => {
                       setSelectedSupplierId(selectedSupplierForView.id);
                       setShowAddIngredientModal(true);
+                      // Reset autocomplete fields
+                      setIngredientSearchTerm('');
+                      setShowIngredientDropdown(false);
                     }}
                     className="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 font-medium transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
                   >

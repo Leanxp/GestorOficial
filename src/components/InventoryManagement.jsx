@@ -39,6 +39,9 @@ const InventoryManagement = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
+  const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
+  const [filteredIngredients, setFilteredIngredients] = useState([]);
+  const [showIngredientDropdown, setShowIngredientDropdown] = useState(false);
 
   // Hook para manejar el teclado
   useEffect(() => {
@@ -63,6 +66,18 @@ const InventoryManagement = () => {
     fetchSuppliers();
     fetchIngredients();
   }, []);
+
+  // Filtrar ingredientes para el autocompletar
+  useEffect(() => {
+    if (ingredientSearchTerm.trim() === '') {
+      setFilteredIngredients([]);
+    } else {
+      const filtered = ingredients.filter(ingredient =>
+        ingredient.name.toLowerCase().includes(ingredientSearchTerm.toLowerCase())
+      );
+      setFilteredIngredients(filtered);
+    }
+  }, [ingredientSearchTerm, ingredients]);
 
   const fetchInventory = async () => {
     try {
@@ -161,46 +176,66 @@ const InventoryManagement = () => {
     }));
   };
 
-  const handleIngredientChange = async (e) => {
-    const ingredientId = e.target.value;
-    setNewProduct(prev => ({
-      ...prev,
-      ingredient_id: ingredientId,
-      supplier_id: ''
-    }));
+
+  // Funciones para el autocompletar de ingredientes
+  const handleIngredientSearchChange = (e) => {
+    const value = e.target.value;
+    setIngredientSearchTerm(value);
+    setShowIngredientDropdown(true);
     
-    if (ingredientId) {
-      try {
-        // Obtener proveedores que tienen este ingrediente
-        const { data, error } = await supabase
-          .from('supplier_ingredients')
-          .select(`
-            supplier_id,
-            suppliers (
-              id,
-              name
-            )
-          `)
-          .eq('ingredient_id', ingredientId);
-        
-        if (error) throw error;
-        
-        // Extraer los proveedores únicos
-        const uniqueSuppliers = data.reduce((acc, item) => {
-          if (!acc.find(s => s.id === item.suppliers.id)) {
-            acc.push(item.suppliers);
-          }
-          return acc;
-        }, []);
-        
-        setAvailableSuppliers(uniqueSuppliers);
-      } catch (err) {
-        console.error('Error al cargar proveedores del ingrediente:', err);
-        setAvailableSuppliers([]);
-      }
-    } else {
+    // Si se limpia el campo, resetear la selección
+    if (value === '') {
+      setNewProduct(prev => ({ ...prev, ingredient_id: '', supplier_id: '' }));
       setAvailableSuppliers([]);
     }
+  };
+
+  const handleIngredientSelect = async (ingredient) => {
+    setNewProduct(prev => ({ ...prev, ingredient_id: ingredient.id, supplier_id: '' }));
+    setIngredientSearchTerm(ingredient.name);
+    setShowIngredientDropdown(false);
+    
+    // Cargar proveedores para el ingrediente seleccionado
+    try {
+      const { data, error } = await supabase
+        .from('supplier_ingredients')
+        .select(`
+          supplier_id,
+          suppliers (
+            id,
+            name
+          )
+        `)
+        .eq('ingredient_id', ingredient.id);
+      
+      if (error) throw error;
+      
+      // Extraer los proveedores únicos
+      const uniqueSuppliers = data.reduce((acc, item) => {
+        if (!acc.find(s => s.id === item.suppliers.id)) {
+          acc.push(item.suppliers);
+        }
+        return acc;
+      }, []);
+      
+      setAvailableSuppliers(uniqueSuppliers);
+    } catch (err) {
+      console.error('Error al cargar proveedores del ingrediente:', err);
+      setAvailableSuppliers([]);
+    }
+  };
+
+  const handleIngredientInputFocus = () => {
+    if (ingredientSearchTerm.trim() !== '') {
+      setShowIngredientDropdown(true);
+    }
+  };
+
+  const handleIngredientInputBlur = () => {
+    // Delay para permitir el click en las opciones
+    setTimeout(() => {
+      setShowIngredientDropdown(false);
+    }, 200);
   };
 
   const handleEdit = (item) => {
@@ -408,6 +443,9 @@ const InventoryManagement = () => {
         batch_number: ''
       });
     setAvailableSuppliers([]);
+    // Reset autocomplete fields
+    setIngredientSearchTerm('');
+    setShowIngredientDropdown(false);
   };
 
   const getAllergens = (item) => {
@@ -470,10 +508,6 @@ const InventoryManagement = () => {
             />
           </div>
         ))}
-        {/* Indicador temporal de debug */}
-        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-          {allergens.length} alérgeno{allergens.length > 1 ? 's' : ''}
-        </span>
       </div>
     );
   };
@@ -615,22 +649,51 @@ const InventoryManagement = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Seleccionar Ingrediente</label>
-                      <select
-                        name="ingredient_id"
-                        value={newProduct.ingredient_id}
-                        onChange={handleIngredientChange}
-                        className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        required
-                      >
-                        <option value="">Seleccionar ingrediente</option>
-                        {ingredients.map(ingredient => (
-                          <option key={ingredient.id} value={ingredient.id}>
-                            {ingredient.name} - {ingredient.unit_measure}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={ingredientSearchTerm}
+                          onChange={handleIngredientSearchChange}
+                          onFocus={handleIngredientInputFocus}
+                          onBlur={handleIngredientInputBlur}
+                          className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="🔍 Buscar ingrediente..."
+                          required
+                        />
+                        
+                        {/* Dropdown de resultados */}
+                        {showIngredientDropdown && filteredIngredients.length > 0 && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {filteredIngredients.map((ingredient) => (
+                              <div
+                                key={ingredient.id}
+                                onClick={() => handleIngredientSelect(ingredient)}
+                                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {ingredient.name}
+                                  </span>
+                                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                    {ingredient.unit_measure}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Mensaje cuando no hay resultados */}
+                        {showIngredientDropdown && ingredientSearchTerm.trim() !== '' && filteredIngredients.length === 0 && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                              No se encontraron ingredientes
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Selecciona un ingrediente existente para agregar al inventario
+                        Busca y selecciona un ingrediente existente para agregar al inventario
                       </p>
                     </div>
 
