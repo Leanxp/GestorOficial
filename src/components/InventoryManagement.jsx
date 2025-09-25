@@ -83,7 +83,7 @@ const InventoryManagement = () => {
     try {
       const result = await database.getInventory();
       if (result.success) {
-        console.log('Datos del inventario:', result.data);
+        // console.log('Datos del inventario:', result.data);
         setInventory(result.data);
       } else {
         setError(result.error);
@@ -147,7 +147,7 @@ const InventoryManagement = () => {
     
     if (familyId) {
       try {
-        console.log('Cargando subfamilias para familia:', familyId);
+        // console.log('Cargando subfamilias para familia:', familyId);
         const { data, error } = await supabase
           .from('inventory_subfamilies')
           .select('*')
@@ -155,7 +155,7 @@ const InventoryManagement = () => {
           .order('name');
         
         if (error) throw error;
-        console.log('Respuesta de subfamilias:', data);
+        // console.log('Respuesta de subfamilias:', data);
         setSubfamilies(data || []);
       } catch (err) {
         console.error('Error al cargar las subfamilias:', err);
@@ -298,7 +298,7 @@ const InventoryManagement = () => {
 
   const handleSaveEdit = async () => {
     try {
-      console.log('Actualizando inventario con ID:', editingItem);
+      // console.log('Actualizando inventario con ID:', editingItem);
       
       // Verificar que el item existe antes de actualizar
       const { error: fetchError } = await supabase
@@ -495,7 +495,7 @@ const InventoryManagement = () => {
               className="w-6 h-6 object-contain"
               title={allergen.name}
               onError={(e) => {
-                console.log('Error loading image:', allergen.file);
+                // console.log('Error loading image:', allergen.file);
                 // Reemplazar con texto
                 e.target.style.display = 'none';
                 const parent = e.target.parentNode;
@@ -958,7 +958,7 @@ const InventoryManagement = () => {
                        <div className="text-xs text-gray-500 mb-1">Proveedor</div>
                        <div className="text-sm font-medium text-gray-700 mb-2">
                          {(() => {
-                           console.log('Item suppliers data:', item.suppliers);
+                           // console.log('Item suppliers data:', item.suppliers);
                            return item.suppliers?.name || 'Sin proveedor';
                          })()}
                        </div>
@@ -1233,7 +1233,7 @@ const InventoryManagement = () => {
                          <div className="text-xs text-gray-500 mb-1">Proveedor</div>
                          <div className="text-sm font-medium text-gray-700">
                            {(() => {
-                             console.log('Item suppliers data (desktop):', item.suppliers);
+                             // console.log('Item suppliers data (desktop):', item.suppliers);
                              return item.suppliers?.name || 'Sin proveedor';
                            })()}
                          </div>

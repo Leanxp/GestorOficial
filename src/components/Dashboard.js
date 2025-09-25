@@ -60,7 +60,13 @@ const Dashboard = () => {
   const renderMenuItem = (item, isMobile = false) => (
     <button
       key={item.name}
-      onClick={() => setCurrentSection(item.name)}
+      onClick={() => {
+        setCurrentSection(item.name);
+        // Cerrar el menú móvil cuando se selecciona una sección
+        if (isMobile) {
+          setSidebarOpen(false);
+        }
+      }}
       className={`group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium ${
         currentSection === item.name ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
       }`}
