@@ -182,29 +182,9 @@ export const database = {
         .from('inventory')
         .select(`
           *,
-          ingredients(
-            name, 
-            unit_measure, 
-            min_stock_level,
-            base_price,
-            alerg_gluten,
-            alerg_crustaceos,
-            alerg_huevos,
-            alerg_pescado,
-            alerg_cacahuetes,
-            alerg_soja,
-            alerg_leche,
-            alerg_frutos,
-            alerg_apio,
-            alerg_mostaza,
-            alerg_sesamo,
-            alerg_sulfitos,
-            alerg_altramuces,
-            alerg_moluscos
-          ),
+          ingredients(name, unit_measure, base_price),
           inventory_families(name),
-          inventory_subfamilies(name),
-          suppliers(name)
+          inventory_subfamilies(name)
         `)
         .order('created_at', { ascending: false })
       
@@ -220,7 +200,19 @@ export const database = {
   async getInventoryWithSuppliers() {
     try {
       const { data, error } = await supabase
-        .rpc('get_inventory_with_suppliers')
+        .from('inventory')
+        .select(`
+          *,
+          ingredients(name, unit_measure, base_price),
+          inventory_families(name),
+          inventory_subfamilies(name),
+          supplier_ingredients(
+            supplier_id,
+            supplier_price,
+            suppliers(name, contact_person)
+          )
+        `)
+        .order('created_at', { ascending: false })
       
       if (error) throw error
       return { success: true, data }
@@ -234,7 +226,20 @@ export const database = {
   async getInventoryBySupplier(supplierId) {
     try {
       const { data, error } = await supabase
-        .rpc('get_inventory_by_supplier', { supplier_id_param: supplierId })
+        .from('inventory')
+        .select(`
+          *,
+          ingredients(name, unit_measure, base_price),
+          inventory_families(name),
+          inventory_subfamilies(name),
+          supplier_ingredients!inner(
+            supplier_id,
+            supplier_price,
+            suppliers(name, contact_person)
+          )
+        `)
+        .eq('supplier_ingredients.supplier_id', supplierId)
+        .order('created_at', { ascending: false })
       
       if (error) throw error
       return { success: true, data }
@@ -248,7 +253,14 @@ export const database = {
   async compareSupplierPrices(ingredientId) {
     try {
       const { data, error } = await supabase
-        .rpc('compare_supplier_prices', { ingredient_id_param: ingredientId })
+        .from('supplier_ingredients')
+        .select(`
+          *,
+          suppliers(name, contact_person, phone, email),
+          ingredients(name, unit_measure)
+        `)
+        .eq('ingredient_id', ingredientId)
+        .order('supplier_price', { ascending: true })
       
       if (error) throw error
       return { success: true, data }
@@ -561,14 +573,13 @@ export const database = {
   async getInventoryStatsBySupplier() {
     try {
       const { data, error } = await supabase
-        .from('inventory')
+        .from('supplier_ingredients')
         .select(`
           supplier_id,
           suppliers(name),
-          quantity,
-          purchase_price,
+          ingredient_id,
           supplier_price,
-          delivery_date
+          ingredients(name as ingredient_name)
         `)
       
       if (error) throw error
@@ -580,27 +591,20 @@ export const database = {
           acc[supplierId] = {
             supplier_name: item.suppliers?.name || 'Sin proveedor',
             total_items: 0,
-            total_quantity: 0,
             total_value: 0,
-            avg_price: 0,
-            last_delivery: null
+            avg_price: 0
           }
         }
         
         acc[supplierId].total_items += 1
-        acc[supplierId].total_quantity += parseFloat(item.quantity || 0)
-        acc[supplierId].total_value += parseFloat(item.quantity || 0) * parseFloat(item.purchase_price || 0)
-        
-        if (item.delivery_date && (!acc[supplierId].last_delivery || new Date(item.delivery_date) > new Date(acc[supplierId].last_delivery))) {
-          acc[supplierId].last_delivery = item.delivery_date
-        }
+        acc[supplierId].total_value += parseFloat(item.supplier_price || 0)
         
         return acc
       }, {})
       
       // Calcular promedios
       Object.values(stats).forEach(stat => {
-        stat.avg_price = stat.total_items > 0 ? stat.total_value / stat.total_quantity : 0
+        stat.avg_price = stat.total_items > 0 ? stat.total_value / stat.total_items : 0
       })
       
       return { success: true, data: Object.values(stats) }

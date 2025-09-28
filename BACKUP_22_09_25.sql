@@ -225,7 +225,6 @@ INSERT INTO inventory (id, ingredient_id, family_id, subfamily_id, quantity, pur
 INSERT INTO inventory (id, ingredient_id, family_id, subfamily_id, quantity, purchase_price, expiry_date, batch_number, created_at) VALUES (10, 10, 2, 4, 40, 1.2, '2025-05-12', 'Lote117', '2025-04-17T18:54:41+00:00');
 INSERT INTO inventory (id, ingredient_id, family_id, subfamily_id, quantity, purchase_price, expiry_date, batch_number, created_at) VALUES (8, 8, 2, 3, 16, 10, '2025-05-17', 'Lote115', '2025-04-17T18:54:41+00:00');
 INSERT INTO inventory (id, ingredient_id, family_id, subfamily_id, quantity, purchase_price, expiry_date, batch_number, created_at) VALUES (1, 1, 2, 4, 50, 1, '2025-05-17', 'Lote123', '2025-04-17T18:54:41+00:00');
-INSERT INTO inventory (id, ingredient_id, family_id, subfamily_id, quantity, purchase_price, expiry_date, batch_number, created_at) VALUES (14, 14, 2, 3, 1, 23, '2025-09-26', 'POL-20250501-01', '2025-09-21T10:11:38.252991+00:00');
 
 -- Datos de la tabla inventory_movements
 INSERT INTO inventory_movements (id, ingredient_id, quantity, movement_type, reason, admin_user_id, created_at) VALUES (1, 1, -5, 'Salida', 'Venta a cliente', 1, '2025-04-17T18:54:42+00:00');
