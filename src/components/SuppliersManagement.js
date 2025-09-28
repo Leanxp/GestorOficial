@@ -125,13 +125,22 @@ const SuppliersManagement = () => {
     fetchCategories();
   }, []);
 
+  // Función para normalizar texto removiendo acentos
+  const normalizeText = (text) => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
   // Filtrar ingredientes para el autocompletar
   useEffect(() => {
     if (ingredientSearchTerm.trim() === '') {
       setFilteredIngredients([]);
     } else {
+      const normalizedSearchTerm = normalizeText(ingredientSearchTerm);
       const filtered = ingredients.filter(ingredient =>
-        ingredient.name.toLowerCase().includes(ingredientSearchTerm.toLowerCase())
+        normalizeText(ingredient.name).includes(normalizedSearchTerm)
       );
       setFilteredIngredients(filtered);
     }
@@ -1975,8 +1984,8 @@ const SuppliersManagement = () => {
                     type="number"
                     step="0.01"
                     min="0"
-                    value={newIngredientForCreation.base_price}
-                    onChange={(e) => setNewIngredientForCreation({ ...newIngredientForCreation, base_price: parseFloat(e.target.value) || 0 })}
+                    value={newIngredientForCreation.base_price === 0 ? '' : newIngredientForCreation.base_price}
+                    onChange={(e) => setNewIngredientForCreation({ ...newIngredientForCreation, base_price: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
                     className="w-full border-2 border-gray-200 rounded-xl py-3 pl-10 pr-4 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
                     placeholder="0.00"
                   />
