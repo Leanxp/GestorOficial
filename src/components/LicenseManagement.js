@@ -131,7 +131,6 @@ const LicenseManagement = () => {
   return (
     <div className="py-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Licencias</h2>
         <p className="text-gray-600">Administra las licencias de todos los usuarios</p>
       </div>
 
