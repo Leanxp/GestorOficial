@@ -184,7 +184,8 @@ export const database = {
           *,
           ingredients(name, unit_measure, base_price),
           inventory_families(name),
-          inventory_subfamilies(name)
+          inventory_subfamilies(name),
+          suppliers(name)
         `)
         .order('created_at', { ascending: false })
       
