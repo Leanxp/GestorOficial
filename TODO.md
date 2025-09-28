@@ -1,0 +1,2 @@
+1. Hay que controlar los registros de los usuarios que no se están almacenando en admin_usuarios
+2. Hay que controlar los movimientos del inventario, ya que el día "X" tendré que hacer inventario de lo que queda

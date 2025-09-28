@@ -182,7 +182,25 @@ export const database = {
         .from('inventory')
         .select(`
           *,
-          ingredients(name, unit_measure, base_price),
+          ingredients(
+            name, 
+            unit_measure, 
+            base_price,
+            alerg_gluten,
+            alerg_crustaceos,
+            alerg_huevos,
+            alerg_pescado,
+            alerg_cacahuetes,
+            alerg_soja,
+            alerg_leche,
+            alerg_frutos,
+            alerg_apio,
+            alerg_mostaza,
+            alerg_sesamo,
+            alerg_sulfitos,
+            alerg_altramuces,
+            alerg_moluscos
+          ),
           inventory_families(name),
           inventory_subfamilies(name),
           suppliers(name)

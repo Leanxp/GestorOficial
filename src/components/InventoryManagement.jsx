@@ -456,6 +456,9 @@ const InventoryManagement = () => {
       return <span className="text-xs text-gray-500">Sin ingrediente</span>;
     }
     
+    // Debug: Log para verificar los datos del ingrediente
+    //console.log('Datos del ingrediente para alérgenos:', ingredient);
+    
     // Lista de alérgenos con sus archivos
     const allergenList = [
       { key: 'alerg_gluten', name: 'gluten', file: 'alerg_gluten.png' },
@@ -474,12 +477,17 @@ const InventoryManagement = () => {
       { key: 'alerg_moluscos', name: 'moluscos', file: 'alerg_moluscos.png' }
     ];
     
-    // Verificar cada alérgeno
+    // Verificar cada alérgeno - manejar tanto boolean como número
     allergenList.forEach(allergen => {
-      if (ingredient[allergen.key] === 1 || ingredient[allergen.key] === true) {
+      const value = ingredient[allergen.key];
+      // Verificar si el valor es truthy (true, 1, "true", etc.)
+      if (value === true || value === 1 || value === "true" || value === "1") {
+        //console.log(`Alérgeno encontrado: ${allergen.name} (${allergen.key}) = ${value}`);
         allergens.push(allergen);
       }
     });
+    
+    //console.log('Alérgenos encontrados:', allergens);
     
     if (allergens.length === 0) {
       return <span className="text-xs text-gray-500">Sin alérgenos</span>;
