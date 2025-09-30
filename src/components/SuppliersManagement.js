@@ -633,15 +633,20 @@ const SuppliersManagement = () => {
         <div className="flex justify-center sm:justify-start">
           <button 
             onClick={() => setShowAddModal(true)}
-            className="w-full sm:w-auto bg-indigo-600 text-white px-6 py-4 rounded-xl font-medium hover:bg-indigo-700 active:bg-indigo-800 transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 touch-manipulation"
+            className="group flex items-center space-x-3 p-4 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-indigo-200 w-full sm:w-auto"
             aria-label="Agregar nuevo proveedor"
           >
-            <span className="flex items-center justify-center space-x-2">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-purple-100 p-2 rounded-lg flex-shrink-0 group-hover:bg-purple-200 transition-colors duration-200">
+              <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              <span>Nuevo Proveedor</span>
-            </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 group-hover:text-purple-700 transition-colors duration-200">Nuevo Proveedor</p>
+            </div>
+            <svg className="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
 
@@ -912,12 +917,23 @@ const SuppliersManagement = () => {
           onClick={(e) => handleModalBackdropClick(e, () => setShowAddModal(false))}
         >
           <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white p-4 sm:p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">Nuevo Proveedor</h2>
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Nuevo Proveedor</h2>
+                    <p className="text-gray-600 text-sm">Añadir nuevo proveedor al sistema</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110"
+                  aria-label="Cerrar modal"
                 >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
