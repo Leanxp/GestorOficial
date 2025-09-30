@@ -14,10 +14,12 @@ const SuppliersManagement = () => {
   const [showEditIngredientModal, setShowEditIngredientModal] = useState(false);
   const [showDeleteIngredientModal, setShowDeleteIngredientModal] = useState(false);
   const [showEditSupplierModal, setShowEditSupplierModal] = useState(false);
+  const [showDeleteSupplierModal, setShowDeleteSupplierModal] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState(null);
   const [selectedSupplierForView, setSelectedSupplierForView] = useState(null);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [selectedSupplierForEdit, setSelectedSupplierForEdit] = useState(null);
+  const [selectedSupplierForDelete, setSelectedSupplierForDelete] = useState(null);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     contact_person: '',
@@ -107,6 +109,8 @@ const SuppliersManagement = () => {
           setShowViewIngredientsModal(false);
         } else if (showEditSupplierModal) {
           setShowEditSupplierModal(false);
+        } else if (showDeleteSupplierModal) {
+          setShowDeleteSupplierModal(false);
         } else if (showAddModal) {
           setShowAddModal(false);
         }
@@ -117,7 +121,7 @@ const SuppliersManagement = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showCreateCategoryModal, showCreateIngredientModal, showAddIngredientModal, showEditIngredientModal, showDeleteIngredientModal, showViewIngredientsModal, showEditSupplierModal, showAddModal]);
+  }, [showCreateCategoryModal, showCreateIngredientModal, showAddIngredientModal, showEditIngredientModal, showDeleteIngredientModal, showViewIngredientsModal, showEditSupplierModal, showDeleteSupplierModal, showAddModal]);
 
   useEffect(() => {
     fetchSuppliers();
@@ -213,19 +217,24 @@ const SuppliersManagement = () => {
     }
   };
 
-  const handleDeleteSupplier = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este proveedor?')) {
-      try {
-        const result = await database.deleteSupplier(id);
-        if (result.success) {
-          fetchSuppliers();
-        } else {
-          console.error('Error deleting supplier:', result.error);
-        }
-      } catch (err) {
-        console.error('Error deleting supplier:', err);
+  const handleDeleteSupplier = async () => {
+    try {
+      const result = await database.deleteSupplier(selectedSupplierForDelete.id);
+      if (result.success) {
+        setShowDeleteSupplierModal(false);
+        setSelectedSupplierForDelete(null);
+        fetchSuppliers();
+      } else {
+        console.error('Error deleting supplier:', result.error);
       }
+    } catch (err) {
+      console.error('Error deleting supplier:', err);
     }
+  };
+
+  const openDeleteSupplierModal = (supplier) => {
+    setSelectedSupplierForDelete(supplier);
+    setShowDeleteSupplierModal(true);
   };
 
   const handleViewIngredients = async (supplier) => {
@@ -710,7 +719,7 @@ const SuppliersManagement = () => {
                     </svg>
                   </button>
                   <button 
-                    onClick={() => handleDeleteSupplier(supplier.id)}
+                    onClick={() => openDeleteSupplierModal(supplier)}
                     className="p-3 text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-all duration-200 active:scale-95 touch-manipulation"
                     aria-label="Eliminar proveedor"
                   >
@@ -829,7 +838,7 @@ const SuppliersManagement = () => {
                         </svg>
                       </button>
                       <button 
-                        onClick={() => handleDeleteSupplier(supplier.id)}
+                        onClick={() => openDeleteSupplierModal(supplier)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-105"
                         aria-label="Eliminar proveedor"
                       >
@@ -2277,6 +2286,79 @@ const SuppliersManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para confirmar eliminación de proveedor */}
+      {showDeleteSupplierModal && selectedSupplierForDelete && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+          onClick={(e) => handleModalBackdropClick(e, () => setShowDeleteSupplierModal(false))}
+        >
+          <div className="bg-white rounded-2xl w-full max-w-sm sm:max-w-md shadow-2xl transform transition-all duration-300 scale-100">
+            {/* Header del modal */}
+            <div className="bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                  <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Eliminar Proveedor</h2>
+                  <p className="text-gray-600 text-sm">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  ¿Eliminar proveedor?
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Estás a punto de eliminar el proveedor <strong>{selectedSupplierForDelete.name}</strong> y toda su información asociada.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Esta acción eliminará permanentemente:
+                </p>
+                <ul className="text-sm text-gray-500 mt-2 space-y-1">
+                  <li>• Información del proveedor</li>
+                  <li>• Todos los ingredientes asociados</li>
+                </ul>
+                <p className="text-sm text-red-600 font-medium mt-3">
+                  Esta acción no se puede deshacer.
+                </p>
+              </div>
+
+              {/* Botones */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteSupplierModal(false)}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 hover:scale-105"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteSupplier}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  <span className="flex items-center justify-center space-x-2">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Eliminar</span>
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
