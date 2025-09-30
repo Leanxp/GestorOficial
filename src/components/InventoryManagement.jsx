@@ -599,7 +599,7 @@ const InventoryManagement = () => {
   }
 
   return (
-    <div className="py-4">
+    <div className="py-4 min-w-0 overflow-x-hidden">
       {/* Barra de herramientas optimizada para móvil */}
       <div className="space-y-4 mb-6">
         {/* Botón de nuevo producto */}
@@ -680,17 +680,27 @@ const InventoryManagement = () => {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, handleCloseModal)}
         >
-          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full h-[95vh] sm:h-auto sm:max-h-[90vh] sm:max-w-lg md:max-w-2xl lg:max-w-4xl overflow-hidden flex flex-col">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-2xl h-[85vh] sm:h-auto sm:max-h-[80vh] overflow-hidden flex flex-col">
             {/* Header fijo */}
-            <div className="flex-shrink-0 bg-white p-4 sm:p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Nuevo Producto</h2>
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Nuevo Producto</h2>
+                    <p className="text-gray-600 text-sm">Añadir nuevo producto al inventario</p>
+                  </div>
+                </div>
                 <button
                   onClick={handleCloseModal}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110"
                   aria-label="Cerrar modal"
                 >
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -698,12 +708,12 @@ const InventoryManagement = () => {
             </div>
             
             {/* Contenido scrolleable */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              <form onSubmit={handleNewProductSubmit} className="space-y-4 sm:space-y-6">
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+              <form onSubmit={handleNewProductSubmit} className="space-y-3 sm:space-y-4">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="grid grid-cols-1 gap-2 sm:gap-3">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Seleccionar Ingrediente</label>
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Seleccionar Ingrediente</label>
                       <div className="relative">
                         <input
                           type="text"
@@ -711,7 +721,7 @@ const InventoryManagement = () => {
                           onChange={handleIngredientSearchChange}
                           onFocus={handleIngredientInputFocus}
                           onBlur={handleIngredientInputBlur}
-                          className="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                           placeholder="🔍 Buscar ingrediente..."
                           required
                         />
@@ -753,20 +763,20 @@ const InventoryManagement = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Cantidad</label>
-                      <div className="flex gap-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Cantidad</label>
+                      <div className="flex gap-2 min-w-0">
                         <input
                           type="number"
                           name="quantity"
                           value={newProduct.quantity}
                           onChange={handleNewProductChange}
-                          className="flex-1 border border-gray-300 rounded-lg shadow-sm py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          className="flex-1 min-w-0 border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                           placeholder="0"
                           required
                           min="0"
                           step="0.01"
                         />
-                        <span className="flex items-center px-2 sm:px-3 text-xs sm:text-sm text-gray-500 bg-gray-50 border border-gray-300 rounded-lg whitespace-nowrap">
+                        <span className="flex items-center px-2 text-xs text-gray-500 bg-gray-50 border border-gray-300 rounded-lg flex-shrink-0">
                           {(() => {
                             const selectedIngredient = ingredients.find(ing => ing.id === parseInt(newProduct.ingredient_id));
                             return selectedIngredient?.unit_measure || 'unidad';
@@ -777,12 +787,12 @@ const InventoryManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Seleccionar Proveedor</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Seleccionar Proveedor</label>
                     <select
                       name="supplier_id"
                       value={newProduct.supplier_id}
                       onChange={handleNewProductChange}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                      className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
                       disabled={!newProduct.ingredient_id || availableSuppliers.length === 0}
                       required
                     >
@@ -803,14 +813,14 @@ const InventoryManagement = () => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 gap-2 sm:gap-3">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Familia</label>
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Familia</label>
                       <select
                         name="family_id"
                         value={newProduct.family_id}
                         onChange={handleFamilyChange}
-                        className="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         required
                       >
                         <option value="">Seleccionar familia</option>
@@ -821,12 +831,12 @@ const InventoryManagement = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Subfamilia</label>
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Subfamilia</label>
                       <select
                         name="subfamily_id"
                         value={newProduct.subfamily_id}
                         onChange={handleSubfamilyChange}
-                        className="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                        className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
                         disabled={!newProduct.family_id}
                       >
                         <option value="">Seleccionar subfamilia</option>
@@ -837,27 +847,27 @@ const InventoryManagement = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 gap-2 sm:gap-3">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha de Caducidad</label>
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Fecha de Caducidad</label>
                       <input
                         type="date"
                         name="expiry_date"
                         value={newProduct.expiry_date}
                         onChange={handleNewProductChange}
-                        className="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Número de Lote</label>
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Número de Lote</label>
                       <input
                         type="text"
                         name="batch_number"
                         value={newProduct.batch_number}
                         onChange={handleNewProductChange}
-                        className="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Ej: L001"
                         required
                       />
@@ -866,24 +876,24 @@ const InventoryManagement = () => {
 
                   {/* Información del ingrediente seleccionado */}
                   {newProduct.ingredient_id && (
-                    <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">Información del Ingrediente</h3>
+                    <div className="mt-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Información del Ingrediente</h3>
                       {(() => {
                         const selectedIngredient = ingredients.find(ing => ing.id === parseInt(newProduct.ingredient_id));
                         return selectedIngredient ? (
-                          <div className="grid grid-cols-1 gap-2 sm:gap-4 text-xs sm:text-sm">
+                          <div className="grid grid-cols-1 gap-1.5 text-xs">
                             <div>
                               <span className="font-medium text-gray-600">Nombre:</span>
                               <p className="text-gray-900 break-words">{selectedIngredient.name}</p>
                             </div>
                             <div>
-                              <span className="font-medium text-gray-600">Unidad de medida:</span>
+                              <span className="font-medium text-gray-600">Unidad:</span>
                               <p className="text-gray-900">{selectedIngredient.unit_measure}</p>
                             </div>
                             {selectedIngredient.description && (
                               <div>
                                 <span className="font-medium text-gray-600">Descripción:</span>
-                                <p className="text-gray-900 break-words">{selectedIngredient.description}</p>
+                                <p className="text-gray-900 break-words text-xs">{selectedIngredient.description}</p>
                               </div>
                             )}
                           </div>
@@ -894,16 +904,16 @@ const InventoryManagement = () => {
 
                   {/* Información del proveedor seleccionado */}
                   {newProduct.supplier_id && (
-                    <div className="mt-3 p-3 sm:p-4 bg-blue-50 rounded-lg">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">Información del Proveedor</h3>
+                    <div className="mt-2 p-2.5 sm:p-3 bg-blue-50 rounded-lg">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Información del Proveedor</h3>
                       {(() => {
                         const selectedSupplier = availableSuppliers.find(sup => sup.id === parseInt(newProduct.supplier_id));
                         return selectedSupplier ? (
-                          <div className="text-xs sm:text-sm">
+                          <div className="text-xs">
                             <span className="font-medium text-gray-600">Proveedor:</span>
                             <p className="text-gray-900 break-words">{selectedSupplier.name}</p>
                             <p className="text-xs text-gray-500 mt-1">
-                              La cantidad, precio y demás información se obtendrán automáticamente de la configuración del proveedor.
+                              La información se obtendrá automáticamente del proveedor.
                             </p>
                           </div>
                         ) : null;
@@ -912,17 +922,17 @@ const InventoryManagement = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
+                <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm sm:text-base text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 hover:scale-105"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-indigo-700 transition-colors"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
                   >
                     Guardar Producto
                   </button>
@@ -934,13 +944,13 @@ const InventoryManagement = () => {
       )}
 
       {/* Vista de Lista - Responsive */}
-      <div className="space-y-2">
+      <div className="space-y-2 min-w-0">
         {filteredInventory.length > 0 ? (
           filteredInventory.map((item) => (
-            <div key={item.id} className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+            <div key={item.id} className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 min-w-0">
               {/* Header de la fila - Siempre visible */}
               <div 
-                className="p-2 sm:p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="p-2 sm:p-3 cursor-pointer hover:bg-gray-50 transition-colors min-w-0"
                 onClick={() => toggleItemExpansion(item.id)}
               >
                 {/* Layout móvil - Compacto */}
@@ -1006,17 +1016,17 @@ const InventoryManagement = () => {
                         </div>
                         
                         {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-white text-gray-800 text-xs rounded-xl shadow-xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-white text-gray-800 text-xs rounded-lg shadow-xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-48 sm:max-w-none">
                           <div className="text-center">
-                            <div className="font-semibold mb-2 text-gray-900">Estado del Producto</div>
-                            <div className="space-y-1.5">
-                              <div>
+                            <div className="font-semibold mb-1 text-gray-900">Estado del Producto</div>
+                            <div className="space-y-1">
+                              <div className="break-words">
                                 <span className="text-gray-600">Cantidad:</span> 
                                 <span className={`ml-1 font-medium ${item.quantity <= 0 ? 'text-red-600' : item.quantity < 5 ? 'text-amber-600' : 'text-green-600'}`}>
                                   {item.quantity} {item.ingredients?.unit_measure || 'unidad'}
                                 </span>
                               </div>
-                              <div>
+                              <div className="break-words">
                                 <span className="text-gray-600">Caducidad:</span> 
                                 <span className={`ml-1 font-medium ${(() => {
                                   const today = new Date();
@@ -1030,7 +1040,7 @@ const InventoryManagement = () => {
                                   {new Date(item.expiry_date).toLocaleDateString()}
                                 </span>
                               </div>
-                              <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                              <div className="text-xs text-gray-500 mt-1 pt-1 border-t border-gray-100 break-words">
                                 {getProductStatus(item).message}
                               </div>
                             </div>
@@ -1149,17 +1159,17 @@ const InventoryManagement = () => {
                       </div>
                       
                       {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-white text-gray-800 text-xs rounded-xl shadow-xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-white text-gray-800 text-xs rounded-lg shadow-xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-48 sm:max-w-none">
                         <div className="text-center">
-                          <div className="font-semibold mb-2 text-gray-900">Estado del Producto</div>
-                          <div className="space-y-1.5">
-                            <div>
+                          <div className="font-semibold mb-1 text-gray-900">Estado del Producto</div>
+                          <div className="space-y-1">
+                            <div className="break-words">
                               <span className="text-gray-600">Cantidad:</span> 
                               <span className={`ml-1 font-medium ${item.quantity <= 0 ? 'text-red-600' : item.quantity < 5 ? 'text-amber-600' : 'text-green-600'}`}>
                                 {item.quantity} {item.ingredients?.unit_measure || 'unidad'}
                               </span>
                             </div>
-                            <div>
+                            <div className="break-words">
                               <span className="text-gray-600">Caducidad:</span> 
                               <span className={`ml-1 font-medium ${(() => {
                                 const today = new Date();
@@ -1173,7 +1183,7 @@ const InventoryManagement = () => {
                                 {new Date(item.expiry_date).toLocaleDateString()}
                               </span>
                             </div>
-                            <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                            <div className="text-xs text-gray-500 mt-1 pt-1 border-t border-gray-100 break-words">
                               {getProductStatus(item).message}
                             </div>
                           </div>
@@ -1234,12 +1244,12 @@ const InventoryManagement = () => {
               <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
                 isItemExpanded(item.id) ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
               }`}>
-                <div className="px-2 sm:px-3 pb-2 sm:pb-3 border-t border-gray-100 bg-gray-50">
+                <div className="px-2 sm:px-3 pb-2 sm:pb-3 border-t border-gray-100 bg-gray-50 min-w-0">
                   <div className="pt-2 sm:pt-3 space-y-2 sm:space-y-3">
                     {/* Información detallada */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 min-w-0">
                       {/* Proveedor */}
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3 min-w-0">
                         <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                           <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -1247,14 +1257,14 @@ const InventoryManagement = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-gray-500 mb-1">Proveedor</div>
-                          <div className="text-sm font-medium text-gray-700">
+                          <div className="text-sm font-medium text-gray-700 truncate">
                             {item.suppliers?.name || 'Sin proveedor'}
                           </div>
                         </div>
                       </div>
 
                       {/* Cantidad editable */}
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3 min-w-0">
                         <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                           <svg className="h-4 w-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8-4" />
@@ -1263,20 +1273,20 @@ const InventoryManagement = () => {
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-gray-500 mb-1">Cantidad</div>
                           {editingItem === item.id ? (
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 min-w-0">
                               <input
                                 type="number"
                                 name="quantity"
                                 value={editForm.quantity}
                                 onChange={handleInputChange}
-                                className="flex-1 px-2 py-1 border rounded text-sm"
+                                className="flex-1 min-w-0 px-2 py-1 border rounded text-sm"
                                 min="0"
                                 step="0.01"
                               />
-                              <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
+                              <span className="text-xs text-gray-500 flex-shrink-0">{item.ingredients?.unit_measure || 'N/A'}</span>
                             </div>
                           ) : (
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 truncate">
                               {item.quantity} <span className="text-xs text-gray-500">{item.ingredients?.unit_measure || 'N/A'}</span>
                             </div>
                           )}
@@ -1284,7 +1294,7 @@ const InventoryManagement = () => {
                       </div>
 
                       {/* Precio */}
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3 min-w-0">
                         <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                           <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
@@ -1292,12 +1302,12 @@ const InventoryManagement = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-gray-500 mb-1">Precio de Compra</div>
-                          <div className="text-sm font-medium text-gray-900">{item.purchase_price} €</div>
+                          <div className="text-sm font-medium text-gray-900 truncate">{item.purchase_price} €</div>
                         </div>
                       </div>
 
                       {/* Fecha de caducidad editable */}
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3 min-w-0">
                         <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                           <svg className="h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1311,10 +1321,10 @@ const InventoryManagement = () => {
                               name="expiry_date"
                               value={editForm.expiry_date}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 border rounded text-sm"
+                              className="w-full min-w-0 px-2 py-1 border rounded text-sm"
                             />
                           ) : (
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 truncate">
                               {new Date(item.expiry_date).toLocaleDateString()}
                             </div>
                           )}
@@ -1322,7 +1332,7 @@ const InventoryManagement = () => {
                       </div>
 
                       {/* Número de lote editable */}
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3 min-w-0">
                         <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
                           <svg className="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -1336,24 +1346,24 @@ const InventoryManagement = () => {
                               name="batch_number"
                               value={editForm.batch_number}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 border rounded text-sm"
+                              className="w-full min-w-0 px-2 py-1 border rounded text-sm"
                             />
                           ) : (
-                            <div className="text-sm font-medium text-gray-900">{item.batch_number}</div>
+                            <div className="text-sm font-medium text-gray-900 truncate">{item.batch_number}</div>
                           )}
                         </div>
                       </div>
 
                       {/* Alérgenos */}
-                      <div className="flex items-center space-x-3 md:col-span-2 lg:col-span-3">
-                        <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                      <div className="flex items-start space-x-3 md:col-span-2 lg:col-span-3 min-w-0">
+                        <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mt-1">
                           <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-gray-500 mb-1">Alérgenos</div>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0 overflow-hidden">
                             {getAllergens(item)}
                           </div>
                         </div>
@@ -1362,16 +1372,16 @@ const InventoryManagement = () => {
 
                     {/* Información del proveedor en modo edición */}
                     {editingItem === item.id && (
-                      <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-white rounded-lg border border-gray-200">
+                      <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-white rounded-lg border border-gray-200 min-w-0">
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">Información del Proveedor</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                          <div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 min-w-0">
+                          <div className="min-w-0">
                             <label className="block text-xs text-gray-500 mb-1">Proveedor</label>
                             <select
                               name="supplier_id"
                               value={editForm.supplier_id}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 border rounded text-sm"
+                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
                             >
                               <option value="">Seleccionar proveedor</option>
                               {suppliers.map(supplier => (
@@ -1379,7 +1389,7 @@ const InventoryManagement = () => {
                               ))}
                             </select>
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <label className="block text-xs text-gray-500 mb-1">Lote del Proveedor</label>
                             <input
                               type="text"
@@ -1387,10 +1397,10 @@ const InventoryManagement = () => {
                               value={editForm.supplier_lot_number}
                               onChange={handleInputChange}
                               placeholder="Lote proveedor"
-                              className="w-full px-3 py-2 border rounded text-sm"
+                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
                             />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <label className="block text-xs text-gray-500 mb-1">Precio del Proveedor</label>
                             <input
                               type="number"
@@ -1399,20 +1409,20 @@ const InventoryManagement = () => {
                               onChange={handleInputChange}
                               placeholder="Precio proveedor"
                               step="0.01"
-                              className="w-full px-3 py-2 border rounded text-sm"
+                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
                             />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <label className="block text-xs text-gray-500 mb-1">Fecha de Entrega</label>
                             <input
                               type="date"
                               name="delivery_date"
                               value={editForm.delivery_date}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 border rounded text-sm"
+                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
                             />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <label className="block text-xs text-gray-500 mb-1">Número de Factura</label>
                             <input
                               type="text"
@@ -1420,7 +1430,7 @@ const InventoryManagement = () => {
                               value={editForm.invoice_number}
                               onChange={handleInputChange}
                               placeholder="Nº factura"
-                              className="w-full px-3 py-2 border rounded text-sm"
+                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
                             />
                           </div>
                         </div>
