@@ -342,10 +342,16 @@ const InventoryManagement = () => {
     try {
       // console.log('Actualizando inventario con ID:', editingItem);
       
-      // Verificar que el item existe antes de actualizar
-      const { error: fetchError } = await supabase
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        throw new Error('Error al obtener información del usuario');
+      }
+
+      // Obtener los valores actuales del inventario para comparar
+      const { data: currentData, error: fetchError } = await supabase
         .from('inventory')
-        .select('ingredient_id')
+        .select('ingredient_id, family_id, subfamily_id, quantity, expiry_date, batch_number')
         .eq('id', editingItem)
         .single();
       
@@ -370,6 +376,92 @@ const InventoryManagement = () => {
         console.error('Error al actualizar inventario:', inventoryError);
         throw inventoryError;
       }
+
+      // Registrar cambios en inventory_movements
+      const movements = [];
+      
+      // Verificar cambios en quantity
+      if (currentData.quantity !== parseFloat(editForm.quantity)) {
+        movements.push({
+          inventory_id: editingItem,
+          ingredient_id: currentData.ingredient_id,
+          user_id: userIdResult.userId,
+          movement_type: 'update',
+          field_changed: 'quantity',
+          old_value: currentData.quantity?.toString() || '',
+          new_value: editForm.quantity,
+          quantity: parseFloat(editForm.quantity),
+          reason: 'Edición manual de cantidad'
+        });
+      }
+
+      // Verificar cambios en expiry_date
+      if (currentData.expiry_date !== editForm.expiry_date) {
+        movements.push({
+          inventory_id: editingItem,
+          ingredient_id: currentData.ingredient_id,
+          user_id: userIdResult.userId,
+          movement_type: 'update',
+          field_changed: 'expiry_date',
+          old_value: currentData.expiry_date || '',
+          new_value: editForm.expiry_date,
+          reason: 'Edición manual de fecha de caducidad'
+        });
+      }
+
+      // Verificar cambios en batch_number
+      if (currentData.batch_number !== editForm.batch_number) {
+        movements.push({
+          inventory_id: editingItem,
+          ingredient_id: currentData.ingredient_id,
+          user_id: userIdResult.userId,
+          movement_type: 'update',
+          field_changed: 'batch_number',
+          old_value: currentData.batch_number || '',
+          new_value: editForm.batch_number,
+          reason: 'Edición manual de número de lote'
+        });
+      }
+
+      // Verificar cambios en family_id
+      if (currentData.family_id !== parseInt(editForm.family_id)) {
+        movements.push({
+          inventory_id: editingItem,
+          ingredient_id: currentData.ingredient_id,
+          user_id: userIdResult.userId,
+          movement_type: 'update',
+          field_changed: 'family_id',
+          old_value: currentData.family_id?.toString() || '',
+          new_value: editForm.family_id,
+          reason: 'Reclasificación de familia'
+        });
+      }
+
+      // Verificar cambios en subfamily_id
+      if (currentData.subfamily_id !== parseInt(editForm.subfamily_id)) {
+        movements.push({
+          inventory_id: editingItem,
+          ingredient_id: currentData.ingredient_id,
+          user_id: userIdResult.userId,
+          movement_type: 'update',
+          field_changed: 'subfamily_id',
+          old_value: currentData.subfamily_id?.toString() || '',
+          new_value: editForm.subfamily_id,
+          reason: 'Reclasificación de subfamilia'
+        });
+      }
+
+      // Insertar movimientos si hay cambios
+      if (movements.length > 0) {
+        const { error: movementsError } = await supabase
+          .from('inventory_movements')
+          .insert(movements);
+
+        if (movementsError) {
+          console.error('Error al registrar movimientos:', movementsError);
+          // No lanzar error aquí para no interrumpir la edición
+        }
+      }
       
       await fetchInventory();
       setEditingItem(null);
@@ -389,12 +481,58 @@ const InventoryManagement = () => {
 
   const handleDelete = async () => {
     try {
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        throw new Error('Error al obtener información del usuario');
+      }
+
+      // Guardar información del producto antes de eliminarlo
+      const productInfo = {
+        inventory_id: selectedProductForDelete.id,
+        ingredient_id: selectedProductForDelete.ingredient_id,
+        quantity: selectedProductForDelete.quantity,
+        ingredient_name: selectedProductForDelete.ingredients?.name || 'Producto desconocido'
+      };
+
+      // Primero eliminar todos los movimientos que referencian este inventory_id
+      const { error: deleteMovementsError } = await supabase
+        .from('inventory_movements')
+        .delete()
+        .eq('inventory_id', selectedProductForDelete.id);
+
+      if (deleteMovementsError) {
+        console.error('Error al eliminar movimientos previos:', deleteMovementsError);
+        // Continuar con la eliminación aunque falle la limpieza de movimientos
+      }
+
+      // Eliminar el producto
       const { error } = await supabase
         .from('inventory')
         .delete()
         .eq('id', selectedProductForDelete.id);
       
       if (error) throw error;
+
+      // Registrar el movimiento de eliminación después de eliminar
+      const { error: movementError } = await supabase
+        .from('inventory_movements')
+        .insert({
+          inventory_id: null, // No usar inventory_id para eliminaciones
+          ingredient_id: productInfo.ingredient_id,
+          user_id: userIdResult.userId,
+          movement_type: 'delete',
+          field_changed: 'product_deleted',
+          old_value: 'Producto existente',
+          new_value: 'Producto eliminado',
+          quantity: productInfo.quantity,
+          reason: `Producto "${productInfo.ingredient_name}" eliminado del inventario`
+        });
+
+      if (movementError) {
+        console.error('Error al registrar movimiento de eliminación:', movementError);
+        // No lanzar error aquí para no interrumpir la eliminación
+      }
       
       setShowDeleteProductModal(false);
       setSelectedProductForDelete(null);
@@ -464,11 +602,33 @@ const InventoryManagement = () => {
         user_id: userIdResult.userId
       };
 
-      const { error: inventoryError } = await supabase
+      const { data: insertedData, error: inventoryError } = await supabase
         .from('inventory')
-        .insert([inventoryData]);
+        .insert([inventoryData])
+        .select('id')
+        .single();
 
       if (inventoryError) throw inventoryError;
+
+      // Registrar el movimiento de creación
+      const { error: movementError } = await supabase
+        .from('inventory_movements')
+        .insert({
+          inventory_id: insertedData.id,
+          ingredient_id: parseInt(newProduct.ingredient_id),
+          user_id: userIdResult.userId,
+          movement_type: 'create',
+          field_changed: 'new_product',
+          old_value: '',
+          new_value: 'Producto creado',
+          quantity: parseFloat(newProduct.quantity),
+          reason: 'Nuevo producto agregado al inventario'
+        });
+
+      if (movementError) {
+        console.error('Error al registrar movimiento de creación:', movementError);
+        // No lanzar error aquí para no interrumpir la creación
+      }
 
       await fetchInventory();
       handleCloseModal();
