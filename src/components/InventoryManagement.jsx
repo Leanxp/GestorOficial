@@ -44,6 +44,9 @@ const InventoryManagement = () => {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [showDeleteProductModal, setShowDeleteProductModal] = useState(false);
   const [selectedProductForDelete, setSelectedProductForDelete] = useState(null);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [saveProgress, setSaveProgress] = useState(0);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Hook para manejar el teclado
   useEffect(() => {
@@ -339,6 +342,9 @@ const InventoryManagement = () => {
   };
 
   const handleSaveEdit = async () => {
+    // Iniciar el proceso de guardado
+    setIsSavingEdit(true);
+    
     try {
       // console.log('Actualizando inventario con ID:', editingItem);
       
@@ -468,6 +474,9 @@ const InventoryManagement = () => {
     } catch (err) {
       console.error('Error al actualizar el inventario:', err);
       setError('Error al actualizar el inventario: ' + (err.message || 'Error desconocido'));
+    } finally {
+      // Resetear estado de guardado
+      setIsSavingEdit(false);
     }
   };
 
@@ -558,12 +567,24 @@ const InventoryManagement = () => {
 
   const handleNewProductSubmit = async (e) => {
     e.preventDefault();
+    
+    // Iniciar el proceso de guardado
+    setIsSavingProduct(true);
+    setSaveProgress(0);
+    
     try {
+      // Paso 1: Validar datos (0-30%)
+      setSaveProgress(10);
+      await new Promise(resolve => setTimeout(resolve, 200)); // Simular validación
+      
       // Obtener el user_id del usuario autenticado
       const userIdResult = await database.getCurrentUserId();
       if (!userIdResult.success) {
         throw new Error('Error al obtener información del usuario');
       }
+      
+      setSaveProgress(20);
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Obtener información del ingrediente seleccionado
       const selectedIngredient = ingredients.find(ing => ing.id === parseInt(newProduct.ingredient_id));
@@ -576,6 +597,12 @@ const InventoryManagement = () => {
       if (!selectedSupplier) {
         throw new Error('Proveedor no encontrado');
       }
+      
+      setSaveProgress(30);
+
+      // Paso 2: Obtener información del proveedor (30-60%)
+      setSaveProgress(40);
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Obtener información del supplier_ingredient para obtener precio
       const { data: supplierIngredient, error: supplierIngredientError } = await supabase
@@ -588,6 +615,9 @@ const InventoryManagement = () => {
       if (supplierIngredientError) {
         throw new Error('No se encontró información del ingrediente en el proveedor');
       }
+      
+      setSaveProgress(50);
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Crear el item de inventario con user_id
       const inventoryData = {
@@ -602,6 +632,10 @@ const InventoryManagement = () => {
         user_id: userIdResult.userId
       };
 
+      // Paso 3: Crear producto (60-90%)
+      setSaveProgress(60);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       const { data: insertedData, error: inventoryError } = await supabase
         .from('inventory')
         .insert([inventoryData])
@@ -609,6 +643,13 @@ const InventoryManagement = () => {
         .single();
 
       if (inventoryError) throw inventoryError;
+      
+      setSaveProgress(75);
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Paso 4: Registrar movimientos (90-100%)
+      setSaveProgress(85);
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Registrar el movimiento de creación
       const { error: movementError } = await supabase
@@ -629,12 +670,26 @@ const InventoryManagement = () => {
         console.error('Error al registrar movimiento de creación:', movementError);
         // No lanzar error aquí para no interrumpir la creación
       }
+      
+      setSaveProgress(95);
+      await new Promise(resolve => setTimeout(resolve, 200));
 
+      // Actualizar inventario
       await fetchInventory();
+      
+      setSaveProgress(100);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Cerrar modal después de completar
       handleCloseModal();
+      
     } catch (err) {
       console.error('Error al crear el producto:', err);
       setError('Error al crear el producto: ' + (err.message || 'Error desconocido'));
+    } finally {
+      // Resetear estados de progreso
+      setIsSavingProduct(false);
+      setSaveProgress(0);
     }
   };
 
@@ -1099,19 +1154,69 @@ const InventoryManagement = () => {
                   )}
                 </div>
 
+                {/* Barra de progreso */}
+                {isSavingProduct && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                          <svg className="w-4 h-4 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-blue-900">Guardando producto...</h3>
+                        <p className="text-xs text-blue-700">Por favor espera mientras procesamos tu solicitud</p>
+                      </div>
+                    </div>
+                    
+                    {/* Barra de progreso */}
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${saveProgress}%` }}
+                      ></div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-blue-600 font-medium">
+                        {saveProgress < 30 ? 'Validando datos...' :
+                         saveProgress < 60 ? 'Creando producto...' :
+                         saveProgress < 90 ? 'Registrando movimientos...' :
+                         'Finalizando...'}
+                      </span>
+                      <span className="text-xs text-blue-600 font-bold">{Math.round(saveProgress)}%</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 hover:scale-105"
+                    disabled={isSavingProduct}
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
+                    disabled={isSavingProduct}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-400 disabled:to-gray-500"
                   >
-                    Guardar Producto
+                    {isSavingProduct ? (
+                      <span className="flex items-center justify-center space-x-2">
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Guardando...</span>
+                      </span>
+                    ) : (
+                      'Guardar Producto'
+                    )}
                   </button>
                 </div>
               </form>
@@ -1231,12 +1336,20 @@ const InventoryManagement = () => {
                         <>
                           <button 
                             onClick={handleSaveEdit}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
+                            disabled={isSavingEdit}
+                            className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label="Guardar cambios"
                           >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                            {isSavingEdit ? (
+                              <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
                           </button>
                           <button 
                             onClick={handleCancelEdit}
@@ -1374,12 +1487,20 @@ const InventoryManagement = () => {
                       <>
                         <button 
                           onClick={handleSaveEdit}
-                          className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
+                          disabled={isSavingEdit}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Guardar cambios"
                         >
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
+                          {isSavingEdit ? (
+                            <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
                         </button>
                         <button 
                           onClick={handleCancelEdit}
