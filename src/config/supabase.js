@@ -35,6 +35,36 @@ export const auth = {
       })
       
       if (error) throw error
+      
+      // Si el registro en Supabase Auth fue exitoso, insertar en admin_usuarios
+      if (data.user) {
+        try {
+          const { error: insertError } = await supabase
+            .from('admin_usuarios')
+            .insert({
+              username: userData.username || email.split('@')[0], // Usar username o parte del email
+              email: email,
+              pwd: 'supabase_auth', // Marcador para usuarios autenticados por Supabase
+              grade: userData.grade || 5,
+              license_type: 'free',
+              max_ingredients: 15,
+              max_suppliers: 15,
+              is_admin: false,
+              last_update: new Date().toISOString()
+            })
+          
+          if (insertError) {
+            console.error('Error al insertar en admin_usuarios:', insertError)
+            // No lanzar error aquí para no interrumpir el flujo de registro
+          } else {
+            console.log('Usuario insertado exitosamente en admin_usuarios')
+          }
+        } catch (insertError) {
+          console.error('Error al insertar en admin_usuarios:', insertError)
+          // No lanzar error aquí para no interrumpir el flujo de registro
+        }
+      }
+      
       return { success: true, user: data.user }
     } catch (error) {
       console.error('Error al registrar usuario:', error)
@@ -74,12 +104,38 @@ export const auth = {
 
 // Funciones para la base de datos
 export const database = {
-  // Obtener categorías
-  async getCategories() {
+  // Obtener el user_id del usuario autenticado
+  async getCurrentUserId() {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error) throw error
+      
+      if (!user) {
+        return { success: false, error: 'Usuario no autenticado' }
+      }
+      
+      // Buscar el user_id en admin_usuarios usando el email
+      const { data: userData, error: userError } = await supabase
+        .from('admin_usuarios')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+      
+      if (userError) throw userError
+      
+      return { success: true, userId: userData.id }
+    } catch (error) {
+      console.error('Error al obtener user_id:', error)
+      return { success: false, error: error.message }
+    }
+  },
+  // Obtener categorías filtradas por usuario
+  async getCategories(userId) {
     try {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('user_id', userId)
         .order('name')
       
       if (error) throw error
@@ -106,8 +162,8 @@ export const database = {
     }
   },
 
-  // Obtener ingredientes
-  async getIngredients() {
+  // Obtener ingredientes filtrados por usuario
+  async getIngredients(userId) {
     try {
       const { data, error } = await supabase
         .from('ingredients')
@@ -116,6 +172,7 @@ export const database = {
           categories(name)
         `)
         .eq('active', true)
+        .eq('user_id', userId)
         .order('name')
       
       if (error) throw error
@@ -175,8 +232,8 @@ export const database = {
     }
   },
 
-  // Obtener inventario
-  async getInventory() {
+  // Obtener inventario filtrado por usuario
+  async getInventory(userId) {
     try {
       const { data, error } = await supabase
         .from('inventory')
@@ -205,6 +262,7 @@ export const database = {
           inventory_subfamilies(name),
           suppliers(name)
         `)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -289,13 +347,14 @@ export const database = {
     }
   },
 
-  // Obtener proveedores
-  async getSuppliers() {
+  // Obtener proveedores filtrados por usuario
+  async getSuppliers(userId) {
     try {
       const { data, error } = await supabase
         .from('suppliers')
         .select('*')
         .eq('active', true)
+        .eq('user_id', userId)
         .order('name')
       
       if (error) throw error

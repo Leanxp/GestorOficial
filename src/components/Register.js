@@ -18,7 +18,7 @@ const Register = () => {
       const result = await signUp(email, password, { username, grade: 5 });
       
       if (result.success) {
-        navigate('/login', { state: { message: 'Usuario registrado exitosamente. Revisa tu email para confirmar la cuenta.' } });
+        navigate('/login', { state: { message: 'Usuario registrado exitosamente. Revisa tu email para confirmar la cuenta y acceder al sistema.' } });
       } else {
         setError(result.error || 'Error en el registro');
       }

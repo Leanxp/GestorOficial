@@ -36,7 +36,6 @@ const InventoryManagement = () => {
     expiry_date: '',
     batch_number: ''
   });
-  const [suppliers, setSuppliers] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
   const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
@@ -68,7 +67,6 @@ const InventoryManagement = () => {
   useEffect(() => {
     fetchInventory();
     fetchFamilies();
-    fetchSuppliers();
     fetchIngredients();
   }, []);
 
@@ -86,7 +84,15 @@ const InventoryManagement = () => {
 
   const fetchInventory = async () => {
     try {
-      const result = await database.getInventory();
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        setError('Error al obtener información del usuario');
+        setLoading(false);
+        return;
+      }
+
+      const result = await database.getInventory(userIdResult.userId);
       if (result.success) {
         // console.log('Datos del inventario:', result.data);
         setInventory(result.data);
@@ -115,26 +121,20 @@ const InventoryManagement = () => {
     }
   };
 
-  const fetchSuppliers = async () => {
-    try {
-      const result = await database.getSuppliers();
-      if (result.success) {
-        setSuppliers(result.data);
-      }
-    } catch (err) {
-      console.error('Error al cargar los proveedores:', err);
-    }
-  };
 
   const fetchIngredients = async () => {
     try {
-      const { data, error } = await supabase
-        .from('ingredients')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      setIngredients(data || []);
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        console.error('Error al obtener información del usuario');
+        return;
+      }
+
+      const result = await database.getIngredients(userIdResult.userId);
+      if (result.success) {
+        setIngredients(result.data || []);
+      }
     } catch (err) {
       console.error('Error al cargar los ingredientes:', err);
     }
@@ -421,6 +421,12 @@ const InventoryManagement = () => {
   const handleNewProductSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        throw new Error('Error al obtener información del usuario');
+      }
+
       // Obtener información del ingrediente seleccionado
       const selectedIngredient = ingredients.find(ing => ing.id === parseInt(newProduct.ingredient_id));
       if (!selectedIngredient) {
@@ -445,7 +451,7 @@ const InventoryManagement = () => {
         throw new Error('No se encontró información del ingrediente en el proveedor');
       }
 
-      // Crear el item de inventario
+      // Crear el item de inventario con user_id
       const inventoryData = {
         ingredient_id: parseInt(newProduct.ingredient_id),
         family_id: parseInt(newProduct.family_id),
@@ -454,7 +460,8 @@ const InventoryManagement = () => {
         quantity: parseFloat(newProduct.quantity) || 0,
         purchase_price: supplierIngredient.supplier_price || 0,
         expiry_date: newProduct.expiry_date,
-        batch_number: newProduct.batch_number
+        batch_number: newProduct.batch_number,
+        user_id: userIdResult.userId
       };
 
       const { error: inventoryError } = await supabase
@@ -1380,72 +1387,6 @@ const InventoryManagement = () => {
                       </div>
                     </div>
 
-                    {/* Información del proveedor en modo edición */}
-                    {editingItem === item.id && (
-                      <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-white rounded-lg border border-gray-200 min-w-0">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Información del Proveedor</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 min-w-0">
-                          <div className="min-w-0">
-                            <label className="block text-xs text-gray-500 mb-1">Proveedor</label>
-                            <select
-                              name="supplier_id"
-                              value={editForm.supplier_id}
-                              onChange={handleInputChange}
-                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
-                            >
-                              <option value="">Seleccionar proveedor</option>
-                              {suppliers.map(supplier => (
-                                <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="min-w-0">
-                            <label className="block text-xs text-gray-500 mb-1">Lote del Proveedor</label>
-                            <input
-                              type="text"
-                              name="supplier_lot_number"
-                              value={editForm.supplier_lot_number}
-                              onChange={handleInputChange}
-                              placeholder="Lote proveedor"
-                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <label className="block text-xs text-gray-500 mb-1">Precio del Proveedor</label>
-                            <input
-                              type="number"
-                              name="supplier_price"
-                              value={editForm.supplier_price}
-                              onChange={handleInputChange}
-                              placeholder="Precio proveedor"
-                              step="0.01"
-                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <label className="block text-xs text-gray-500 mb-1">Fecha de Entrega</label>
-                            <input
-                              type="date"
-                              name="delivery_date"
-                              value={editForm.delivery_date}
-                              onChange={handleInputChange}
-                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <label className="block text-xs text-gray-500 mb-1">Número de Factura</label>
-                            <input
-                              type="text"
-                              name="invoice_number"
-                              value={editForm.invoice_number}
-                              onChange={handleInputChange}
-                              placeholder="Nº factura"
-                              className="w-full min-w-0 px-3 py-2 border rounded text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

@@ -152,7 +152,14 @@ const SuppliersManagement = () => {
 
   const fetchIngredients = async () => {
     try {
-      const result = await database.getIngredients();
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        console.error('Error al obtener información del usuario');
+        return;
+      }
+
+      const result = await database.getIngredients(userIdResult.userId);
       if (result.success) {
         setIngredients(result.data);
       } else {
@@ -165,7 +172,14 @@ const SuppliersManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const result = await database.getCategories();
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        console.error('Error al obtener información del usuario');
+        return;
+      }
+
+      const result = await database.getCategories(userIdResult.userId);
       if (result.success) {
         setCategories(result.data);
       } else {
@@ -179,7 +193,15 @@ const SuppliersManagement = () => {
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
-      const result = await database.getSuppliers();
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        setError('Error al obtener información del usuario');
+        setLoading(false);
+        return;
+      }
+
+      const result = await database.getSuppliers(userIdResult.userId);
       if (result.success) {
         setSuppliers(result.data);
         setError(null);
@@ -198,7 +220,20 @@ const SuppliersManagement = () => {
   const handleAddSupplier = async (e) => {
     e.preventDefault();
     try {
-      const result = await database.createSupplier(newSupplier);
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        console.error('Error al obtener información del usuario');
+        return;
+      }
+
+      // Crear el proveedor con user_id
+      const supplierData = {
+        ...newSupplier,
+        user_id: userIdResult.userId
+      };
+
+      const result = await database.createSupplier(supplierData);
       if (result.success) {
         setShowAddModal(false);
         setNewSupplier({
@@ -258,7 +293,20 @@ const SuppliersManagement = () => {
   const handleAddIngredient = async (e) => {
     e.preventDefault();
     try {
-      const result = await database.addSupplierIngredient(selectedSupplierId, newIngredient);
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        console.error('Error al obtener información del usuario');
+        return;
+      }
+
+      // Crear la relación supplier_ingredient con user_id
+      const supplierIngredientData = {
+        ...newIngredient,
+        user_id: userIdResult.userId
+      };
+
+      const result = await database.addSupplierIngredient(selectedSupplierId, supplierIngredientData);
       if (result.success) {
         setShowAddIngredientModal(false);
         setNewIngredient({
@@ -319,9 +367,17 @@ const SuppliersManagement = () => {
   const handleCreateIngredient = async (e) => {
     e.preventDefault();
     try {
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        console.error('Error al obtener información del usuario');
+        return;
+      }
+
       // Convertir los valores booleanos de alérgenos a 1 o 0 para la base de datos
       const ingredientData = {
         ...newIngredientForCreation,
+        user_id: userIdResult.userId,
         alerg_gluten: newIngredientForCreation.alerg_gluten ? 1 : 0,
         alerg_crustaceos: newIngredientForCreation.alerg_crustaceos ? 1 : 0,
         alerg_huevos: newIngredientForCreation.alerg_huevos ? 1 : 0,
@@ -382,7 +438,20 @@ const SuppliersManagement = () => {
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     try {
-      const result = await database.createCategory(newCategory);
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        console.error('Error al obtener información del usuario');
+        return;
+      }
+
+      // Crear la categoría con user_id
+      const categoryData = {
+        ...newCategory,
+        user_id: userIdResult.userId
+      };
+
+      const result = await database.createCategory(categoryData);
       if (result.success) {
         // Actualizar la lista de categorías
         await fetchCategories();
