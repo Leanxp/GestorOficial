@@ -47,6 +47,9 @@ const InventoryManagement = () => {
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [saveProgress, setSaveProgress] = useState(0);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [showMovementsModal, setShowMovementsModal] = useState(false);
+  const [movements, setMovements] = useState([]);
+  const [movementsLoading, setMovementsLoading] = useState(false);
 
   // Hook para manejar el teclado
   useEffect(() => {
@@ -55,6 +58,8 @@ const InventoryManagement = () => {
         // Cerrar el modal más reciente abierto
         if (showDeleteProductModal) {
           setShowDeleteProductModal(false);
+        } else if (showMovementsModal) {
+          closeMovementsModal();
         } else if (showNewProductModal) {
           handleCloseModal();
         }
@@ -65,7 +70,7 @@ const InventoryManagement = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showDeleteProductModal, showNewProductModal]);
+  }, [showDeleteProductModal, showMovementsModal, showNewProductModal]);
 
   useEffect(() => {
     fetchInventory();
@@ -140,6 +145,41 @@ const InventoryManagement = () => {
       }
     } catch (err) {
       console.error('Error al cargar los ingredientes:', err);
+    }
+  };
+
+  const fetchMovements = async () => {
+    setMovementsLoading(true);
+    try {
+      // Obtener el user_id del usuario autenticado
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success) {
+        setError('Error al obtener información del usuario');
+        return;
+      }
+
+      // Obtener movimientos de la última semana
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      const { data, error } = await supabase
+        .from('inventory_movements')
+        .select(`
+          *,
+          ingredients(name, unit_measure),
+          admin_usuarios(username)
+        `)
+        .eq('user_id', userIdResult.userId)
+        .gte('created_at', oneWeekAgo.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMovements(data || []);
+    } catch (err) {
+      console.error('Error al cargar los movimientos:', err);
+      setError('Error al cargar los movimientos');
+    } finally {
+      setMovementsLoading(false);
     }
   };
 
@@ -557,6 +597,16 @@ const InventoryManagement = () => {
     setShowDeleteProductModal(true);
   };
 
+  const openMovementsModal = () => {
+    setShowMovementsModal(true);
+    fetchMovements();
+  };
+
+  const closeMovementsModal = () => {
+    setShowMovementsModal(false);
+    setMovements([]);
+  };
+
   const handleNewProductChange = (e) => {
     const { name, value } = e.target;
     setNewProduct(prev => ({
@@ -834,8 +884,8 @@ const InventoryManagement = () => {
     <div className="py-4 min-w-0 overflow-x-hidden">
       {/* Barra de herramientas optimizada para móvil */}
       <div className="space-y-4 mb-6">
-        {/* Botón de nuevo producto */}
-        <div className="flex justify-center sm:justify-start">
+        {/* Botones de acción */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center sm:justify-start">
           <button 
             onClick={() => setShowNewProductModal(true)}
             className="group flex items-center space-x-3 p-4 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-indigo-200 w-full sm:w-auto"
@@ -850,6 +900,24 @@ const InventoryManagement = () => {
               <p className="text-sm font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors duration-200">Nuevo Producto</p>
             </div>
             <svg className="h-4 w-4 text-gray-400 group-hover:text-indigo-500 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          <button 
+            onClick={openMovementsModal}
+            className="group flex items-center space-x-3 p-4 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-green-200 w-full sm:w-auto"
+            aria-label="Ver movimientos del inventario"
+          >
+            <div className="bg-green-100 p-2 rounded-lg flex-shrink-0 group-hover:bg-green-200 transition-colors duration-200">
+              <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200">Movimientos</p>
+            </div>
+            <svg className="h-4 w-4 text-gray-400 group-hover:text-green-500 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -1768,6 +1836,146 @@ const InventoryManagement = () => {
                   </span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para mostrar movimientos */}
+      {showMovementsModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          onClick={(e) => handleModalBackdropClick(e, closeMovementsModal)}
+        >
+          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-2xl lg:max-w-4xl h-[85vh] sm:h-auto sm:max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Header fijo */}
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                    <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Movimientos del Inventario</h2>
+                    <p className="text-gray-600 text-sm">Actividad de la última semana</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeMovementsModal}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110"
+                  aria-label="Cerrar modal"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            {/* Contenido scrolleable */}
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+              {movementsLoading ? (
+                <div className="flex flex-col justify-center items-center h-32 space-y-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-gray-900">Cargando movimientos...</p>
+                    <p className="text-xs text-gray-500 mt-1">Obteniendo actividad reciente</p>
+                  </div>
+                </div>
+              ) : movements.length > 0 ? (
+                <div className="space-y-3">
+                  {movements.map((movement, index) => (
+                    <div key={movement.id || index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              movement.movement_type === 'create' ? 'bg-green-500' :
+                              movement.movement_type === 'update' ? 'bg-blue-500' :
+                              movement.movement_type === 'delete' ? 'bg-red-500' :
+                              'bg-gray-500'
+                            }`}></div>
+                            <span className="text-sm font-semibold text-gray-900">
+                              {movement.movement_type === 'create' ? 'Producto Creado' :
+                               movement.movement_type === 'update' ? 'Producto Actualizado' :
+                               movement.movement_type === 'delete' ? 'Producto Eliminado' :
+                               'Movimiento'}
+                            </span>
+                            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
+                              {new Date(movement.created_at).toLocaleDateString('es-ES', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">Ingrediente:</span> {movement.ingredients?.name || 'N/A'}
+                            </p>
+                            
+                            {movement.field_changed && (
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Campo modificado:</span> {movement.field_changed}
+                              </p>
+                            )}
+                            
+                            {movement.quantity !== null && movement.quantity !== undefined && (
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Cantidad:</span> {movement.quantity} {movement.ingredients?.unit_measure || 'unidad'}
+                              </p>
+                            )}
+                            
+                            {movement.old_value && movement.new_value && (
+                              <div className="text-sm text-gray-700">
+                                <span className="font-medium">Cambio:</span>
+                                <div className="mt-1 flex items-center space-x-2">
+                                  <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">
+                                    {movement.old_value}
+                                  </span>
+                                  <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                                    {movement.new_value}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {movement.reason && (
+                              <p className="text-sm text-gray-600 italic">
+                                {movement.reason}
+                              </p>
+                            )}
+                            
+                            {movement.admin_usuarios?.username && (
+                              <p className="text-xs text-gray-500">
+                                <span className="font-medium">Usuario:</span> {movement.admin_usuarios.username}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No hay movimientos recientes</h3>
+                  <p className="text-sm text-gray-500">
+                    No se han registrado movimientos en el inventario durante la última semana.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLicense } from '../hooks/useLicense';
+import { useInventory } from '../hooks/useInventory';
 import InventoryManagement from './InventoryManagement';
 import SuppliersManagement from './SuppliersManagement';
 import LicenseManagement from './LicenseManagement';
@@ -10,6 +11,17 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { isAdmin, getLicenseInfo } = useLicense();
+  const { 
+    inventoryCount, 
+    lastMovement, 
+    loading: countLoading, 
+    movementLoading, 
+    formatTimeAgo, 
+    formatTime, 
+    formatMovementDescription,
+    getGrowthText, 
+    getGrowthColor 
+  } = useInventory();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentSection, setCurrentSection] = useState('Dashboard');
@@ -144,11 +156,15 @@ const Dashboard = () => {
                     </svg>
                   </div>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-indigo-600 mb-1">45</p>
+                <p className="text-xl sm:text-2xl font-bold text-indigo-600 mb-1">
+                  {countLoading ? '...' : inventoryCount}
+                </p>
                 <p className="text-xs text-gray-500 mb-2">Productos en stock</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+5%</span>
-                  <span className="text-xs text-gray-400">vs anterior</span>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${getGrowthColor()}`}>
+                    {getGrowthText()}
+                  </span>
+                  <span className="text-xs text-gray-400">productos nuevos</span>
                 </div>
               </div>
 
@@ -236,11 +252,21 @@ const Dashboard = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">Actualización de inventario</p>
-                      <p className="text-xs text-gray-600 mt-1">Tomates - 50 unidades</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-gray-500">hace 4 horas</span>
-                        <span className="text-xs text-gray-400">12:45 PM</span>
-                      </div>
+                      {movementLoading ? (
+                        <p className="text-xs text-gray-600 mt-1">Cargando...</p>
+                      ) : lastMovement ? (
+                        <>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {formatMovementDescription(lastMovement)}
+                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-gray-500">{formatTimeAgo(lastMovement.created_at)}</span>
+                            <span className="text-xs text-gray-400">{formatTime(lastMovement.created_at)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs text-gray-600 mt-1">No hay movimientos recientes</p>
+                      )}
                     </div>
                   </div>
                   

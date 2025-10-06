@@ -389,7 +389,7 @@ export const database = {
   },
 
   // Obtener movimientos de inventario
-  async getInventoryMovements() {
+  async getInventoryMovements(userId) {
     try {
       const { data, error } = await supabase
         .from('inventory_movements')
@@ -398,6 +398,7 @@ export const database = {
           ingredients(name, unit_measure),
           admin_usuarios(username)
         `)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -644,6 +645,74 @@ export const database = {
     } catch (error) {
       console.error('Error al crear inventario con proveedor:', error)
       return { success: false, error: error.message }
+    }
+  },
+
+  // Obtener conteo de productos en inventario por usuario
+  async getInventoryCount(userId) {
+    try {
+      const { count, error } = await supabase
+        .from('inventory')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+      
+      if (error) throw error
+      return { success: true, count: count || 0 }
+    } catch (error) {
+      console.error('Error al obtener conteo de inventario:', error)
+      return { success: false, error: error.message, count: 0 }
+    }
+  },
+
+  // Obtener estadísticas de crecimiento semanal de inventario
+  async getInventoryWeeklyGrowth(userId) {
+    try {
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+      // Productos añadidos en la última semana
+      const { count: thisWeekCount, error: thisWeekError } = await supabase
+        .from('inventory')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', oneWeekAgo.toISOString())
+        .lt('created_at', now.toISOString());
+
+      if (thisWeekError) throw thisWeekError;
+
+      // Productos añadidos en la semana anterior
+      const { count: lastWeekCount, error: lastWeekError } = await supabase
+        .from('inventory')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', twoWeeksAgo.toISOString())
+        .lt('created_at', oneWeekAgo.toISOString());
+
+      if (lastWeekError) throw lastWeekError;
+
+      const thisWeek = thisWeekCount || 0;
+      const lastWeek = lastWeekCount || 0;
+
+      // Calcular porcentaje de crecimiento
+      let growthPercentage = 0;
+      if (lastWeek > 0) {
+        growthPercentage = ((thisWeek - lastWeek) / lastWeek) * 100;
+      } else if (thisWeek > 0) {
+        growthPercentage = 100; // Si no había productos la semana pasada pero hay esta semana
+      }
+
+      return {
+        success: true,
+        data: {
+          thisWeek,
+          lastWeek,
+          growthPercentage: Math.round(growthPercentage)
+        }
+      };
+    } catch (error) {
+      console.error('Error al obtener crecimiento semanal:', error);
+      return { success: false, error: error.message };
     }
   },
 
