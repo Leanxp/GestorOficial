@@ -1886,18 +1886,18 @@ const InventoryManagement = () => {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, closeMovementsModal)}
         >
-          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl h-[90vh] sm:h-auto sm:max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl h-[75vh] sm:h-auto sm:max-h-[85vh] overflow-hidden flex flex-col">
             {/* Header fijo */}
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 sm:p-6 rounded-t-2xl">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-3 sm:p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-6 h-6 sm:w-10 sm:h-10 bg-green-100 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="h-3 w-3 sm:h-6 sm:w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                     </svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Movimientos del Inventario</h2>
+                    <h2 className="text-base sm:text-xl font-bold text-gray-900 truncate">Movimientos del Inventario</h2>
                     <p className="text-gray-600 text-xs sm:text-sm truncate">Actividad de la última semana</p>
                   </div>
                 </div>
@@ -1928,10 +1928,10 @@ const InventoryManagement = () => {
                   )}
                   <button
                     onClick={closeMovementsModal}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110 flex-shrink-0"
+                    className="p-1.5 sm:p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110 flex-shrink-0"
                     aria-label="Cerrar modal"
                   >
-                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -1940,17 +1940,17 @@ const InventoryManagement = () => {
             </div>
             
             {/* Contenido scrolleable */}
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="flex-1 overflow-y-auto p-1 sm:p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {movementsLoading ? (
-                <div className="flex flex-col justify-center items-center h-32 space-y-3 sm:space-y-4">
-                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-green-600"></div>
+                <div className="flex flex-col justify-center items-center h-24 sm:h-32 space-y-2 sm:space-y-4">
+                  <div className="animate-spin rounded-full h-5 w-5 sm:h-8 sm:w-8 border-b-2 border-green-600"></div>
                   <div className="text-center px-4">
-                    <p className="text-sm sm:text-base font-medium text-gray-900">Cargando movimientos...</p>
+                    <p className="text-xs sm:text-base font-medium text-gray-900">Cargando movimientos...</p>
                     <p className="text-xs sm:text-sm text-gray-500 mt-1">Obteniendo actividad reciente</p>
                   </div>
                 </div>
               ) : movements.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-2 sm:space-y-4">
                   {(() => {
                     // Agrupar movimientos por fecha
                     const groupedMovements = movements.reduce((groups, movement) => {
@@ -1981,18 +1981,18 @@ const InventoryManagement = () => {
                         <div key={date} className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                           {/* Encabezado de fecha - Clickeable */}
                           <div 
-                            className="p-3 sm:p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors duration-200 border-b border-gray-100"
+                            className="p-2 sm:p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors duration-200 border-b border-gray-100"
                             onClick={() => toggleDateExpansion(date)}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="w-6 h-6 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <svg className="h-3 w-3 sm:h-5 sm:w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <h3 className="text-sm sm:text-lg font-bold text-gray-900 capitalize truncate">
+                                  <h3 className="text-xs sm:text-lg font-bold text-gray-900 capitalize truncate">
                                     {formattedDate}
                                   </h3>
                                   <p className="text-xs sm:text-sm text-gray-600 truncate">
@@ -2024,13 +2024,13 @@ const InventoryManagement = () => {
                           <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
                             isExpanded ? 'max-h-none opacity-100' : 'max-h-0 opacity-0'
                           }`}>
-                            <div className="p-2 sm:p-4 space-y-2 sm:space-y-3 bg-gray-50">
+                            <div className="p-1 sm:p-4 space-y-1 sm:space-y-3 bg-gray-50">
                               {dateMovements.map((movement, index) => (
-                                <div key={movement.id || index} className="bg-white rounded-lg p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                                <div key={movement.id || index} className="bg-white rounded-lg p-2 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center space-x-2 mb-2 sm:mb-3">
-                                        <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
+                                      <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-3">
+                                        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
                                           movement.movement_type === 'create' ? 'bg-green-500' :
                                           movement.movement_type === 'update' ? 'bg-blue-500' :
                                           movement.movement_type === 'delete' ? 'bg-red-500' :
@@ -2042,7 +2042,7 @@ const InventoryManagement = () => {
                                            movement.movement_type === 'delete' ? 'Producto Eliminado' :
                                            'Movimiento'}
                                         </span>
-                                        <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full flex-shrink-0">
+                                        <span className="text-xs text-gray-500 bg-gray-200 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full flex-shrink-0">
                                           {new Date(movement.created_at).toLocaleTimeString('es-ES', {
                                             hour: '2-digit',
                                             minute: '2-digit'
@@ -2050,9 +2050,9 @@ const InventoryManagement = () => {
                                         </span>
                                       </div>
                                       
-                                      <div className="space-y-1.5 sm:space-y-2">
-                                        <div className="flex items-start space-x-2">
-                                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <div className="space-y-1 sm:space-y-2">
+                                        <div className="flex items-start space-x-1 sm:space-x-2">
+                                          <svg className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8-4" />
                                           </svg>
                                           <p className="text-xs sm:text-sm text-gray-700 break-words">
@@ -2061,8 +2061,8 @@ const InventoryManagement = () => {
                                         </div>
                                         
                                         {movement.field_changed && (
-                                          <div className="flex items-start space-x-2">
-                                            <svg className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <div className="flex items-start space-x-1 sm:space-x-2">
+                                            <svg className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
                                             <p className="text-xs sm:text-sm text-gray-700 break-words">
@@ -2072,8 +2072,8 @@ const InventoryManagement = () => {
                                         )}
                                         
                                         {movement.quantity !== null && movement.quantity !== undefined && (
-                                          <div className="flex items-start space-x-2">
-                                            <svg className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <div className="flex items-start space-x-1 sm:space-x-2">
+                                            <svg className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                                             </svg>
                                             <p className="text-xs sm:text-sm text-gray-700 break-words">
@@ -2084,20 +2084,20 @@ const InventoryManagement = () => {
                                         
                                         {movement.old_value && movement.new_value && (
                                           <div className="text-xs sm:text-sm text-gray-700">
-                                            <div className="flex items-start space-x-2 mb-1">
-                                              <svg className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <div className="flex items-start space-x-1 sm:space-x-2 mb-1">
+                                              <svg className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                               </svg>
                                               <span className="font-medium">Cambio:</span>
                                             </div>
-                                            <div className="ml-5 sm:ml-6 flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium break-all">
+                                            <div className="ml-4 sm:ml-6 flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                                              <span className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-red-100 text-red-800 rounded text-xs font-medium break-all">
                                                 {movement.old_value}
                                               </span>
-                                              <svg className="h-3 w-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <svg className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                               </svg>
-                                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium break-all">
+                                              <span className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-green-100 text-green-800 rounded text-xs font-medium break-all">
                                                 {movement.new_value}
                                               </span>
                                             </div>
@@ -2105,8 +2105,8 @@ const InventoryManagement = () => {
                                         )}
                                         
                                         {movement.reason && (
-                                          <div className="flex items-start space-x-2">
-                                            <svg className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <div className="flex items-start space-x-1 sm:space-x-2">
+                                            <svg className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                                             </svg>
                                             <p className="text-xs sm:text-sm text-gray-600 italic break-words">
@@ -2116,8 +2116,8 @@ const InventoryManagement = () => {
                                         )}
                                         
                                         {movement.admin_usuarios?.username && (
-                                          <div className="flex items-center space-x-2">
-                                            <svg className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <div className="flex items-center space-x-1 sm:space-x-2">
+                                            <svg className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                             </svg>
                                             <p className="text-xs text-gray-500 break-words">
@@ -2138,12 +2138,12 @@ const InventoryManagement = () => {
                   })()}
                 </div>
               ) : (
-                <div className="text-center py-8 sm:py-12 px-4">
-                  <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mb-3 sm:mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center py-6 sm:py-12 px-4">
+                  <svg className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mb-2 sm:mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                   </svg>
-                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No hay movimientos recientes</h3>
-                  <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                  <h3 className="text-sm sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">No hay movimientos recientes</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">
                     No se han registrado movimientos en el inventario durante la última semana.
                   </p>
                 </div>
