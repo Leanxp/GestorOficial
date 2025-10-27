@@ -994,7 +994,8 @@ const SuppliersManagement = () => {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, () => setShowAddModal(false))}
         >
-          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-2xl h-[85vh] sm:h-auto sm:max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Header fijo */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -1019,81 +1020,83 @@ const SuppliersManagement = () => {
                 </button>
               </div>
             </div>
-            <div className="p-4 sm:p-6">
-              <form onSubmit={handleAddSupplier} className="space-y-6">
-                <div className="space-y-4">
+            
+            {/* Contenido scrolleable */}
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+              <form onSubmit={handleAddSupplier} className="space-y-3 sm:space-y-4">
+                <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre del Proveedor</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Nombre del Proveedor</label>
                     <input
                       type="text"
                       value={newSupplier.name}
                       onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Ej: Distribuidora ABC"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Persona de Contacto</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Persona de Contacto</label>
                     <input
                       type="text"
                       value={newSupplier.contact_person}
                       onChange={(e) => setNewSupplier({ ...newSupplier, contact_person: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Ej: Juan Pérez"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Email</label>
                     <input
                       type="email"
                       value={newSupplier.email}
                       onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Ej: contacto@proveedor.com"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Teléfono</label>
                     <input
                       type="tel"
                       value={newSupplier.phone}
                       onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Ej: +34 123 456 789"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Dirección</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Dirección</label>
                     <input
                       type="text"
                       value={newSupplier.address}
                       onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Ej: Calle Mayor 123, Madrid"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 pt-4 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                    className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
                   >
                     Guardar Proveedor
                   </button>
