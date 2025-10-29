@@ -45,7 +45,7 @@ const RecipeManagement = () => {
     preparation_time: '',
     difficulty: 'Fácil',
     servings: 1,
-    category: 'Entrada'
+    category: 'Entrantes'
   });
   
   // Estados para ingredientes
@@ -62,10 +62,9 @@ const RecipeManagement = () => {
   // Referencias para el plato SVG
   const svgRef = useRef(null);
   
-  // Estados para filtros y búsqueda
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('');
+  // Estados para modal de categorías
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryForModal, setCategoryForModal] = useState('');
   
   // Estados para edición
   const [editingRecipe, setEditingRecipe] = useState(null);
@@ -111,7 +110,7 @@ const RecipeManagement = () => {
       preparation_time: '',
       difficulty: 'Fácil',
       servings: 1,
-      category: 'Entrada'
+      category: 'Entrantes'
     });
   };
 
@@ -141,7 +140,7 @@ const RecipeManagement = () => {
           preparation_time: '30 min',
           difficulty: 'Fácil',
           servings: 4,
-          category: 'Plato Principal',
+          category: 'Primeros Platos',
           ingredients: [
             { id: 1, name: 'Pasta', quantity: 500, unit: 'g', position: { x: 35, y: 65 } },
             { id: 2, name: 'Crema', quantity: 200, unit: 'ml', position: { x: 50, y: 70 } },
@@ -151,16 +150,50 @@ const RecipeManagement = () => {
         },
         {
           id: 2,
+          name: 'Gazpacho Andaluz',
+          description: 'Refrescante sopa fría de tomate y verduras',
+          preparation_time: '20 min',
+          difficulty: 'Fácil',
+          servings: 6,
+          category: 'Primeros Platos',
+          ingredients: [
+            { id: 4, name: 'Tomate', quantity: 1000, unit: 'g', position: { x: 40, y: 68 } },
+            { id: 5, name: 'Pepino', quantity: 200, unit: 'g', position: { x: 55, y: 72 } },
+            { id: 6, name: 'Pimiento Verde', quantity: 150, unit: 'g', position: { x: 45, y: 78 } },
+            { id: 7, name: 'Aceite de Oliva', quantity: 100, unit: 'ml', position: { x: 50, y: 75 } },
+            { id: 8, name: 'Ajo', quantity: 2, unit: 'dientes', position: { x: 42, y: 70 } }
+          ],
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 3,
+          name: 'Ensalada de Pasta',
+          description: 'Ensalada fresca con pasta, tomate, mozzarella y albahaca',
+          preparation_time: '25 min',
+          difficulty: 'Fácil',
+          servings: 4,
+          category: 'Primeros Platos',
+          ingredients: [
+            { id: 9, name: 'Pasta', quantity: 400, unit: 'g', position: { x: 38, y: 66 } },
+            { id: 10, name: 'Tomate Cherry', quantity: 300, unit: 'g', position: { x: 52, y: 72 } },
+            { id: 11, name: 'Mozzarella', quantity: 250, unit: 'g', position: { x: 48, y: 76 } },
+            { id: 12, name: 'Albahaca', quantity: 20, unit: 'g', position: { x: 44, y: 70 } },
+            { id: 13, name: 'Aceite de Oliva', quantity: 60, unit: 'ml', position: { x: 56, y: 74 } }
+          ],
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 4,
           name: 'Ensalada César',
           description: 'Ensalada fresca con aderezo césar',
           preparation_time: '15 min',
           difficulty: 'Fácil',
           servings: 2,
-          category: 'Entrada',
+          category: 'Aperitivos',
           ingredients: [
-            { id: 4, name: 'Lechuga', quantity: 200, unit: 'g', position: { x: 40, y: 68 } },
-            { id: 5, name: 'Pollo', quantity: 150, unit: 'g', position: { x: 55, y: 72 } },
-            { id: 6, name: 'Crutones', quantity: 50, unit: 'g', position: { x: 45, y: 78 } }
+            { id: 14, name: 'Lechuga', quantity: 200, unit: 'g', position: { x: 40, y: 68 } },
+            { id: 15, name: 'Pollo', quantity: 150, unit: 'g', position: { x: 55, y: 72 } },
+            { id: 16, name: 'Crutones', quantity: 50, unit: 'g', position: { x: 45, y: 78 } }
           ],
           created_at: new Date().toISOString()
         }
@@ -311,7 +344,7 @@ const RecipeManagement = () => {
       preparation_time: '',
       difficulty: 'Fácil',
       servings: 1,
-      category: 'Entrada'
+      category: 'Entrantes'
     });
     setPlateIngredients([]);
   };
@@ -366,15 +399,57 @@ const RecipeManagement = () => {
     }
   };
 
-  // Filtrar recetas
-  const filteredRecipes = recipes.filter(recipe => {
-    const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         recipe.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || recipe.category === selectedCategory;
-    const matchesDifficulty = !selectedDifficulty || recipe.difficulty === selectedDifficulty;
+  // Filtrar recetas por categoría para el modal
+  const recipesByCategory = recipes.filter(recipe => recipe.category === categoryForModal);
+
+  // Función para calcular estadísticas por categoría
+  const getCategoryStats = (categoryName) => {
+    const categoryRecipes = recipes.filter(recipe => recipe.category === categoryName);
     
-    return matchesSearch && matchesCategory && matchesDifficulty;
-  });
+    if (categoryRecipes.length === 0) {
+      return {
+        count: 0,
+        hasRecipes: false,
+        mostCommonDifficulty: null,
+        averageTime: null,
+        latestRecipes: []
+      };
+    }
+
+    // Calcular dificultad más común
+    const difficultyCounts = {};
+    categoryRecipes.forEach(recipe => {
+      difficultyCounts[recipe.difficulty] = (difficultyCounts[recipe.difficulty] || 0) + 1;
+    });
+    const mostCommonDifficulty = Object.keys(difficultyCounts).reduce((a, b) => 
+      difficultyCounts[a] > difficultyCounts[b] ? a : b
+    );
+
+    // Calcular tiempo promedio (extraer números de "30 min", "15 min", etc.)
+    const times = categoryRecipes
+      .map(recipe => {
+        const match = recipe.preparation_time?.match(/(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      })
+      .filter(time => time > 0);
+    
+    const averageTime = times.length > 0 
+      ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
+      : null;
+
+    // Obtener últimas 3 recetas ordenadas por fecha
+    const latestRecipes = [...categoryRecipes]
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, 3);
+
+    return {
+      count: categoryRecipes.length,
+      hasRecipes: true,
+      mostCommonDifficulty,
+      averageTime,
+      latestRecipes
+    };
+  };
 
   // Componente del horno SVG interactivo
   const PlateSVG = () => (
@@ -796,48 +871,125 @@ const RecipeManagement = () => {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por nombre o descripción..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      {/* Cartas de categorías */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {[
+          { name: 'Aperitivos', icon: '🍤' },
+          { name: 'Primeros Platos', icon: '🥗' },
+          { name: 'Segundos Platos', icon: '🍽️' },
+          { name: 'Postres', icon: '🍰' },
+          { name: 'Bebidas', icon: '🍷' }
+        ].map((cat) => {
+          const stats = getCategoryStats(cat.name);
+          const isEmpty = !stats.hasRecipes;
+          
+          return (
+            <button
+              key={cat.name}
+              type="button"
+              onClick={() => {
+                setCategoryForModal(cat.name);
+                setShowCategoryModal(true);
+              }}
+              className={`text-left bg-white p-5 rounded-lg shadow-sm border transition-all duration-200 group ${
+                isEmpty 
+                  ? 'border-gray-200 hover:border-gray-300' 
+                  : 'border-gray-200 hover:border-indigo-300 hover:shadow-md'
+              }`}
             >
-              <option value="">Todas las categorías</option>
-              <option value="Entrada">Entrada</option>
-              <option value="Plato Principal">Plato Principal</option>
-              <option value="Postre">Postre</option>
-              <option value="Bebida">Bebida</option>
-              <option value="Aperitivo">Aperitivo</option>
-            </select>
+              {/* Header con icono y contador */}
+              <div className="flex items-start justify-between mb-3">
+                <div className={`relative h-12 w-12 flex items-center justify-center rounded-lg text-xl transition-colors duration-200 ${
+                  isEmpty
+                    ? 'bg-gray-100 text-gray-400'
+                    : 'bg-indigo-100 text-indigo-700 group-hover:bg-indigo-200'
+                }`}>
+                  <span>{cat.icon}</span>
+                  {/* Badge contador - Opción 1 */}
+                  {stats.count > 0 && (
+                    <span className={`absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-xs font-bold text-white ${
+                      stats.count > 9 ? 'bg-indigo-600' : 'bg-indigo-500'
+                    }`}>
+                      {stats.count > 99 ? '99+' : stats.count}
+                    </span>
+                  )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Dificultad</label>
-            <select
-              value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Todas las dificultades</option>
-              <option value="Fácil">Fácil</option>
-              <option value="Media">Media</option>
-              <option value="Difícil">Difícil</option>
-            </select>
+                {/* Indicador de estado - Opción 4 */}
+                <div className={`h-2 w-2 rounded-full ${
+                  isEmpty ? 'bg-gray-300' : 'bg-green-500'
+                }`} title={isEmpty ? 'Sin recetas' : `${stats.count} receta(s)`}></div>
           </div>
+
+              {/* Título y descripción */}
+              <div className="mb-3">
+                <div className={`font-semibold text-base mb-1 truncate transition-colors duration-200 ${
+                  isEmpty ? 'text-gray-500' : 'text-gray-900 group-hover:text-indigo-700'
+                }`}>
+                  {cat.name}
         </div>
+                <div className={`text-xs truncate transition-colors duration-200 ${
+                  isEmpty ? 'text-gray-400' : 'text-gray-500 group-hover:text-indigo-600'
+                }`}>
+                  {stats.count === 0 
+                    ? 'Sin recetas' 
+                    : stats.count === 1 
+                      ? '1 receta' 
+                      : `${stats.count} recetas`
+                  }
+                </div>
+              </div>
+
+              {/* Estadísticas - Opción 3 */}
+              {stats.hasRecipes && (
+                <div className="mb-3 space-y-1.5">
+                  {stats.mostCommonDifficulty && (
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        stats.mostCommonDifficulty === 'Fácil' ? 'bg-green-100 text-green-700' :
+                        stats.mostCommonDifficulty === 'Media' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {stats.mostCommonDifficulty}
+                      </span>
+                      <span className="text-gray-500">más común</span>
+                    </div>
+                  )}
+                  {stats.averageTime && (
+                    <div className="text-xs text-gray-600">
+                      <span className="font-medium">{stats.averageTime} min</span>
+                      <span className="text-gray-500"> promedio</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Mini-preview de últimas recetas - Opción 2 */}
+              {stats.latestRecipes.length > 0 && (
+                <div className="mb-3 pt-2 border-t border-gray-100">
+                  <div className="text-xs font-medium text-gray-700 mb-1.5">Últimas recetas:</div>
+                  <div className="space-y-1">
+                    {stats.latestRecipes.map((recipe, idx) => (
+                      <div key={recipe.id} className="flex items-center gap-2 text-xs">
+                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-400 flex-shrink-0"></div>
+                        <span className="text-gray-600 truncate">{recipe.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer con flecha */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                <span className="text-xs text-gray-400 group-hover:text-indigo-600 transition-colors duration-200">
+                  {isEmpty ? 'Crear receta' : 'Ver todas'}
+                </span>
+                <svg className="h-4 w-4 text-gray-400 group-hover:text-indigo-600 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Modal de crear/editar receta */}
@@ -949,11 +1101,11 @@ const RecipeManagement = () => {
                         onChange={(e) => setNewRecipe(prev => ({ ...prev, category: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       >
-                        <option value="Entrada">Entrada</option>
-                        <option value="Plato Principal">Plato Principal</option>
-                        <option value="Postre">Postre</option>
-                        <option value="Bebida">Bebida</option>
-                        <option value="Aperitivo">Aperitivo</option>
+                        <option value="Aperitivos">Aperitivos</option>
+                        <option value="Primeros Platos">Primeros Platos</option>
+                        <option value="Segundos Platos">Segundos Platos</option>
+                        <option value="Postres">Postres</option>
+                        <option value="Bebidas">Bebidas</option>
                       </select>
                     </div>
                   </div>
@@ -1160,9 +1312,165 @@ const RecipeManagement = () => {
         </div>
       )}
 
-      {/* Lista de recetas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredRecipes.map((recipe) => (
+      {/* Modal de categorías */}
+      {showCategoryModal && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 modal-backdrop flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowCategoryModal(false);
+              setCategoryForModal('');
+            }
+          }}
+        >
+          <div className="relative mx-auto w-full sm:max-w-6xl bg-white shadow-xl rounded-t-lg sm:rounded-lg overflow-hidden flex flex-col max-h-[90vh] sm:my-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-md text-base sm:text-lg bg-indigo-100 text-indigo-700 flex-shrink-0">
+                  <span>
+                    {categoryForModal === 'Aperitivos' ? '🍤' :
+                     categoryForModal === 'Primeros Platos' ? '🥗' :
+                     categoryForModal === 'Segundos Platos' ? '🍽️' :
+                     categoryForModal === 'Postres' ? '🍰' :
+                     categoryForModal === 'Bebidas' ? '🥤' : ''}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Recetas de {categoryForModal}</h2>
+                  <p className="text-xs sm:text-sm text-gray-500">{recipesByCategory.length} receta(s) encontrada(s)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCategoryModal(false);
+                  setCategoryForModal('');
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
+                aria-label="Cerrar modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Contenido con scroll */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {recipesByCategory.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {recipesByCategory.map((recipe) => (
+                    <div key={recipe.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 recipe-card group">
+                      <div className="p-4 sm:p-6">
+                        <div className="flex items-start justify-between mb-3 sm:mb-4">
+                          <div className="flex-1 min-w-0 pr-2">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2 truncate">{recipe.name}</h3>
+                            <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{recipe.description}</p>
+                          </div>
+                          <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setShowCategoryModal(false);
+                                setCategoryForModal('');
+                                handleEditRecipe(recipe);
+                              }}
+                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-200"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleDeleteRecipe(recipe.id);
+                                if (recipesByCategory.length === 1) {
+                                  setShowCategoryModal(false);
+                                  setCategoryForModal('');
+                                }
+                              }}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-200"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                            recipe.difficulty === 'Fácil' ? 'difficulty-easy' :
+                            recipe.difficulty === 'Media' ? 'difficulty-medium' :
+                            'difficulty-hard'
+                          }`}>
+                            {recipe.difficulty}
+                          </span>
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                            {recipe.category}
+                          </span>
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                            {recipe.preparation_time}
+                          </span>
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                            {recipe.servings} porciones
+                          </span>
+                        </div>
+
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Ingredientes:</h4>
+                          <div className="space-y-1">
+                            {recipe.ingredients?.slice(0, 3).map((ingredient, index) => (
+                              <div key={index} className="text-sm text-gray-600">
+                                • {ingredient.name} - {ingredient.quantity} {ingredient.unit}
+                              </div>
+                            ))}
+                            {recipe.ingredients?.length > 3 && (
+                              <div className="text-sm text-gray-500">
+                                +{recipe.ingredients.length - 3} ingredientes más...
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-gray-500">
+                          Creada: {new Date(recipe.created_at).toLocaleDateString('es-ES')}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V19.5a2.25 2.25 0 002.25 2.25h.75m-1.5-18h.008v.008H12V3.75zm0 0h.008v.008H12V3.75z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No hay recetas en esta categoría</h3>
+                  <p className="mt-1 text-sm text-gray-500">Aún no tienes recetas de {categoryForModal}.</p>
+                  <div className="mt-6">
+                    <button
+                      onClick={() => {
+                        setShowCategoryModal(false);
+                        setCategoryForModal('');
+                        setShowCreateModal(true);
+                      }}
+                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Crear nueva receta
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de recetas - Temporalmente oculta */}
+      {false && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {recipes.map((recipe) => (
           <div key={recipe.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 recipe-card group">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
@@ -1231,9 +1539,9 @@ const RecipeManagement = () => {
             </div>
           </div>
         ))}
-      </div>
+      </div>}
 
-      {filteredRecipes.length === 0 && (
+      {false && recipes.length === 0 && (
         <div className="text-center py-12">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V19.5a2.25 2.25 0 002.25 2.25h.75m-1.5-18h.008v.008H12V3.75zm0 0h.008v.008H12V3.75z" />
