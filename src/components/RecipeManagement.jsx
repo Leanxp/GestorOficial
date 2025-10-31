@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { database } from '../config/supabase';
+import { database, supabase } from '../config/supabase';
 
 const RecipeManagement = () => {
   // Estilos CSS integrados
@@ -42,15 +42,14 @@ const RecipeManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newRecipe, setNewRecipe] = useState({
     name: '',
-    preparation_time: '',
     difficulty: 'Fácil',
-    servings: 1,
-    category: 'Entrantes'
+    category: 'Entrantes',
+    description: ''
   });
   
   // Estados para ingredientes
   const [plateIngredients, setPlateIngredients] = useState([]);
-  const [currentStep, setCurrentStep] = useState(1); // 1: Agregar ingredientes, 2: Completar datos
+  const [currentStep, setCurrentStep] = useState(1); // 1: Ingredientes, 2: Datos básicos, 3: Pasos
   const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
   const [showIngredientDropdown, setShowIngredientDropdown] = useState(false);
   const [filteredIngredients, setFilteredIngredients] = useState([]);
@@ -65,10 +64,16 @@ const RecipeManagement = () => {
   // Estados para modal de categorías
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryForModal, setCategoryForModal] = useState('');
+  const [expandedRecipes, setExpandedRecipes] = useState(new Set());
   
   // Estados para edición
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Estados para pasos de receta (paso 3)
+  const [recipeSteps, setRecipeSteps] = useState([]); // [{ step_number, step_text }]
+  const [newStepText, setNewStepText] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -81,8 +86,7 @@ const RecipeManagement = () => {
       if (event.key === 'Escape') {
         // Cerrar el modal más reciente abierto
         if (showEditModal) {
-          setShowEditModal(false);
-          setEditingRecipe(null);
+          handleCloseEditModal();
         } else if (showCreateModal) {
           handleCloseModal();
         }
@@ -105,12 +109,34 @@ const RecipeManagement = () => {
     setFilteredIngredients([]);
     setEditingQuantity(null);
     setTempQuantity('');
+    setRecipeSteps([]);
+    setNewStepText('');
     setNewRecipe({
       name: '',
-      preparation_time: '',
       difficulty: 'Fácil',
-      servings: 1,
-      category: 'Entrantes'
+      category: 'Entrantes',
+      description: ''
+    });
+  };
+
+  // Función para cerrar el modal de edición
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingRecipe(null);
+    setCurrentStep(1);
+    setPlateIngredients([]);
+    setIngredientSearchTerm('');
+    setShowIngredientDropdown(false);
+    setFilteredIngredients([]);
+    setEditingQuantity(null);
+    setTempQuantity('');
+    setRecipeSteps([]);
+    setNewStepText('');
+    setNewRecipe({
+      name: '',
+      difficulty: 'Fácil',
+      category: 'Entrantes',
+      description: ''
     });
   };
 
@@ -131,73 +157,14 @@ const RecipeManagement = () => {
         setInventory(inventoryResult.data);
       }
 
-      // Cargar recetas (por ahora simulamos datos)
-      setRecipes([
-        {
-          id: 1,
-          name: 'Pasta Alfredo',
-          description: 'Deliciosa pasta con salsa alfredo cremosa',
-          preparation_time: '30 min',
-          difficulty: 'Fácil',
-          servings: 4,
-          category: 'Primeros Platos',
-          ingredients: [
-            { id: 1, name: 'Pasta', quantity: 500, unit: 'g', position: { x: 35, y: 65 } },
-            { id: 2, name: 'Crema', quantity: 200, unit: 'ml', position: { x: 50, y: 70 } },
-            { id: 3, name: 'Queso Parmesano', quantity: 100, unit: 'g', position: { x: 60, y: 75 } }
-          ],
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 2,
-          name: 'Gazpacho Andaluz',
-          description: 'Refrescante sopa fría de tomate y verduras',
-          preparation_time: '20 min',
-          difficulty: 'Fácil',
-          servings: 6,
-          category: 'Primeros Platos',
-          ingredients: [
-            { id: 4, name: 'Tomate', quantity: 1000, unit: 'g', position: { x: 40, y: 68 } },
-            { id: 5, name: 'Pepino', quantity: 200, unit: 'g', position: { x: 55, y: 72 } },
-            { id: 6, name: 'Pimiento Verde', quantity: 150, unit: 'g', position: { x: 45, y: 78 } },
-            { id: 7, name: 'Aceite de Oliva', quantity: 100, unit: 'ml', position: { x: 50, y: 75 } },
-            { id: 8, name: 'Ajo', quantity: 2, unit: 'dientes', position: { x: 42, y: 70 } }
-          ],
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 3,
-          name: 'Ensalada de Pasta',
-          description: 'Ensalada fresca con pasta, tomate, mozzarella y albahaca',
-          preparation_time: '25 min',
-          difficulty: 'Fácil',
-          servings: 4,
-          category: 'Primeros Platos',
-          ingredients: [
-            { id: 9, name: 'Pasta', quantity: 400, unit: 'g', position: { x: 38, y: 66 } },
-            { id: 10, name: 'Tomate Cherry', quantity: 300, unit: 'g', position: { x: 52, y: 72 } },
-            { id: 11, name: 'Mozzarella', quantity: 250, unit: 'g', position: { x: 48, y: 76 } },
-            { id: 12, name: 'Albahaca', quantity: 20, unit: 'g', position: { x: 44, y: 70 } },
-            { id: 13, name: 'Aceite de Oliva', quantity: 60, unit: 'ml', position: { x: 56, y: 74 } }
-          ],
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 4,
-          name: 'Ensalada César',
-          description: 'Ensalada fresca con aderezo césar',
-          preparation_time: '15 min',
-          difficulty: 'Fácil',
-          servings: 2,
-          category: 'Aperitivos',
-          ingredients: [
-            { id: 14, name: 'Lechuga', quantity: 200, unit: 'g', position: { x: 40, y: 68 } },
-            { id: 15, name: 'Pollo', quantity: 150, unit: 'g', position: { x: 55, y: 72 } },
-            { id: 16, name: 'Crutones', quantity: 50, unit: 'g', position: { x: 45, y: 78 } }
-          ],
-          created_at: new Date().toISOString()
-        }
-      ]);
+      // Cargar recetas desde la base de datos
+      const recipesResult = await database.getRecipes(userIdResult.userId);
+      if (recipesResult.success) {
+        setRecipes(recipesResult.data);
+      } else {
+        console.error('Error al cargar recetas:', recipesResult.error);
+        setError('Error al cargar las recetas');
+      }
       
     } catch (err) {
       console.error('Error al cargar datos:', err);
@@ -210,8 +177,21 @@ const RecipeManagement = () => {
 
   // Función para cambiar de paso
   const handleNextStep = () => {
-    if (plateIngredients.length > 0) {
+    if (currentStep === 1) {
+      if (plateIngredients.length > 0) setCurrentStep(2);
+      return;
+    }
+    if (currentStep === 2) {
+      if (newRecipe.name.trim()) setCurrentStep(3);
+      return;
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep === 3) {
       setCurrentStep(2);
+    } else if (currentStep === 2) {
+      setCurrentStep(1);
     }
   };
 
@@ -314,6 +294,8 @@ const RecipeManagement = () => {
         name: ingredient.ingredients?.name || 'Ingrediente',
         quantity: 1,
         unit: ingredient.ingredients?.unit_measure || 'unidad',
+        // Referencia al id de la tabla ingredients (necesario para recipe_ingredients)
+        ingredientRefId: ingredient.ingredient_id,
         position: { x: Math.random() * 40 + 30, y: Math.random() * 20 + 60 }
       };
       
@@ -327,36 +309,110 @@ const RecipeManagement = () => {
   };
 
   // Funciones para gestionar recetas
-  const handleCreateRecipe = () => {
+  const handleCreateRecipe = async () => {
     if (!newRecipe.name.trim()) return;
-    
-    const recipe = {
-      id: Date.now(),
-      ...newRecipe,
-      ingredients: plateIngredients,
-      created_at: new Date().toISOString()
-    };
-    
-    setRecipes(prev => [recipe, ...prev]);
-    handleCloseModal();
-    setNewRecipe({
-      name: '',
-      preparation_time: '',
-      difficulty: 'Fácil',
-      servings: 1,
-      category: 'Entrantes'
-    });
-    setPlateIngredients([]);
+    setSaving(true);
+
+    try {
+      // Obtener user_id desde admin_usuarios
+      const userIdResult = await database.getCurrentUserId();
+      if (!userIdResult.success || !userIdResult.userId) {
+        throw new Error('No se pudo obtener el usuario');
+      }
+
+      // Generar recipe_id lógico (entero, distinto a PK). Usamos timestamp en segundos.
+      const clientRecipeId = Math.floor(Date.now() / 1000);
+
+      // Insertar en inventory_recipes
+      const { data: insertedRecipes, error: insertRecipeError } = await supabase
+        .from('inventory_recipes')
+        .insert([
+          {
+            recipe_category: newRecipe.category,
+            recipe_id: clientRecipeId,
+            recipe_name: newRecipe.name,
+            inventory_id: null,
+            user_id: userIdResult.userId,
+            difficulty: newRecipe.difficulty || 'Fácil',
+            notes: newRecipe.description?.trim() || null
+          }
+        ])
+        .select('*');
+
+      if (insertRecipeError) throw insertRecipeError;
+      const inventoryRecipe = insertedRecipes?.[0];
+      if (!inventoryRecipe) throw new Error('No se pudo crear la receta');
+
+      // Insertar pasos si existen
+      if (recipeSteps && recipeSteps.length > 0) {
+        // Normalizar y limitar 25
+        const stepsPayload = recipeSteps
+          .slice(0, 25)
+          .filter(s => (s?.step_text || '').trim())
+          .map((s, idx) => ({
+            recipe_id: inventoryRecipe.id, // referencia al PK de inventory_recipes
+            step_number: typeof s.step_number === 'number' ? s.step_number : idx + 1,
+            step_text: s.step_text.trim()
+          }));
+
+        if (stepsPayload.length > 0) {
+          const { error: stepsError } = await supabase
+            .from('recipe_steps')
+            .insert(stepsPayload);
+          if (stepsError) throw stepsError;
+        }
+      }
+
+      // Insertar ingredientes de la receta en recipe_ingredients
+      if (plateIngredients && plateIngredients.length > 0) {
+        const ingredientsPayload = plateIngredients
+          .filter(it => typeof it.ingredientRefId === 'number')
+          .map((it, idx) => ({
+            recipe_id: inventoryRecipe.id, // FK a inventory_recipes.id
+            ingredient_id: it.ingredientRefId, // FK a ingredients.id
+            quantity: it.quantity || 1,
+            unit_measure: it.unit || 'g',
+            position: idx + 1,
+            notes: null
+          }));
+
+        if (ingredientsPayload.length > 0) {
+          const { error: riError } = await supabase
+            .from('recipe_ingredients')
+            .insert(ingredientsPayload);
+          if (riError) throw riError;
+        }
+      }
+
+      // Recargar las recetas desde la base de datos para asegurar sincronización
+      const userIdResult2 = await database.getCurrentUserId();
+      if (userIdResult2.success) {
+        const recipesResult = await database.getRecipes(userIdResult2.userId);
+        if (recipesResult.success) {
+          setRecipes(recipesResult.data);
+          console.log('Recetas recargadas después de crear:', recipesResult.data.length);
+        } else {
+          console.error('Error al recargar recetas:', recipesResult.error);
+        }
+      }
+
+      // Reset y cerrar
+      handleCloseModal();
+    } catch (err) {
+      console.error('Error al crear receta:', err);
+      setError('No se pudo crear la receta');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEditRecipe = (recipe) => {
     setEditingRecipe(recipe);
     setNewRecipe({
       name: recipe.name,
-      preparation_time: recipe.preparation_time,
-      difficulty: recipe.difficulty,
-      servings: recipe.servings,
-      category: recipe.category
+      difficulty: recipe.difficulty || 'Fácil',
+      category: recipe.category,
+      description: recipe.description || ''
     });
     
     // Asegurar que los ingredientes tengan posición definida
@@ -369,38 +425,174 @@ const RecipeManagement = () => {
     }));
     
     setPlateIngredients(ingredientsWithPosition);
+    
+    // Cargar los pasos de la receta si existen
+    if (recipe.steps && Array.isArray(recipe.steps) && recipe.steps.length > 0) {
+      // Asegurar que los pasos tienen el formato correcto
+      const formattedSteps = recipe.steps
+        .filter(step => step && step.step_text) // Filtrar pasos válidos
+        .map((step, index) => ({
+          step_number: typeof step.step_number === 'number' ? step.step_number : (index + 1),
+          step_text: step.step_text || ''
+        }));
+      setRecipeSteps(formattedSteps);
+    } else {
+      setRecipeSteps([]);
+    }
+    
+    setCurrentStep(1); // Resetear al paso 1 al abrir el modal
     setShowEditModal(true);
   };
 
-  const handleUpdateRecipe = () => {
+  const handleUpdateRecipe = async () => {
     if (!editingRecipe || !newRecipe.name.trim()) return;
-    
-    const updatedRecipe = {
-      ...editingRecipe,
-      ...newRecipe,
-      ingredients: plateIngredients,
-      updated_at: new Date().toISOString()
-    };
-    
-    setRecipes(prev => 
-      prev.map(recipe => 
-        recipe.id === editingRecipe.id ? updatedRecipe : recipe
-      )
-    );
-    
-    setShowEditModal(false);
-    setEditingRecipe(null);
-    setPlateIngredients([]);
+    setSaving(true);
+
+    try {
+      const recipeId = editingRecipe.id;
+
+      // 1. Actualizar la receta en inventory_recipes
+      const { error: updateRecipeError } = await supabase
+        .from('inventory_recipes')
+        .update({
+          recipe_name: newRecipe.name,
+          recipe_category: newRecipe.category,
+          difficulty: newRecipe.difficulty || 'Fácil',
+          notes: newRecipe.description?.trim() || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', recipeId);
+
+      if (updateRecipeError) throw updateRecipeError;
+
+      // 2. Eliminar todos los ingredientes existentes de la receta
+      const { error: deleteIngredientsError } = await supabase
+        .from('recipe_ingredients')
+        .delete()
+        .eq('recipe_id', recipeId);
+
+      if (deleteIngredientsError) throw deleteIngredientsError;
+
+      // 3. Insertar los nuevos ingredientes
+      if (plateIngredients && plateIngredients.length > 0) {
+        const ingredientsPayload = plateIngredients
+          .filter(it => typeof it.ingredientRefId === 'number')
+          .map((it, idx) => ({
+            recipe_id: recipeId,
+            ingredient_id: it.ingredientRefId,
+            quantity: it.quantity || 1,
+            unit_measure: it.unit || 'g',
+            position: idx + 1,
+            notes: null
+          }));
+
+        if (ingredientsPayload.length > 0) {
+          const { error: insertIngredientsError } = await supabase
+            .from('recipe_ingredients')
+            .insert(ingredientsPayload);
+          if (insertIngredientsError) throw insertIngredientsError;
+        }
+      }
+
+      // 4. Eliminar todos los pasos existentes de la receta
+      const { error: deleteStepsError } = await supabase
+        .from('recipe_steps')
+        .delete()
+        .eq('recipe_id', recipeId);
+
+      if (deleteStepsError) throw deleteStepsError;
+
+      // 5. Insertar los nuevos pasos
+      if (recipeSteps && recipeSteps.length > 0) {
+        const stepsPayload = recipeSteps
+          .slice(0, 25)
+          .filter(s => (s?.step_text || '').trim())
+          .map((s, idx) => ({
+            recipe_id: recipeId,
+            step_number: typeof s.step_number === 'number' ? s.step_number : idx + 1,
+            step_text: s.step_text.trim()
+          }));
+
+        if (stepsPayload.length > 0) {
+          const { error: insertStepsError } = await supabase
+            .from('recipe_steps')
+            .insert(stepsPayload);
+          if (insertStepsError) throw insertStepsError;
+        }
+      }
+
+      // 6. Recargar las recetas desde la base de datos para asegurar sincronización
+      const userIdResult = await database.getCurrentUserId();
+      if (userIdResult.success) {
+        const recipesResult = await database.getRecipes(userIdResult.userId);
+        if (recipesResult.success) {
+          setRecipes(recipesResult.data);
+          console.log('Recetas recargadas después de actualizar:', recipesResult.data.length);
+        } else {
+          console.error('Error al recargar recetas:', recipesResult.error);
+        }
+      }
+
+      // Cerrar modal y resetear
+      handleCloseEditModal();
+    } catch (err) {
+      console.error('Error al actualizar receta:', err);
+      setError('No se pudo actualizar la receta');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDeleteRecipe = (recipeId) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta receta?')) {
-      setRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+  const handleDeleteRecipe = async (recipeId) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta receta?')) {
+      return;
+    }
+
+    try {
+      // Eliminar la receta (esto eliminará automáticamente los ingredientes y pasos por CASCADE)
+      const { error: deleteError } = await supabase
+        .from('inventory_recipes')
+        .delete()
+        .eq('id', recipeId);
+
+      if (deleteError) throw deleteError;
+
+      // Recargar las recetas desde la base de datos
+      const userIdResult = await database.getCurrentUserId();
+      if (userIdResult.success) {
+        const recipesResult = await database.getRecipes(userIdResult.userId);
+        if (recipesResult.success) {
+          setRecipes(recipesResult.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error al eliminar receta:', err);
+      setError('No se pudo eliminar la receta');
     }
   };
 
   // Filtrar recetas por categoría para el modal
   const recipesByCategory = recipes.filter(recipe => recipe.category === categoryForModal);
+
+  // Función para toggle de expansión de recetas
+  const toggleRecipeExpand = (recipeId) => {
+    setExpandedRecipes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(recipeId)) {
+        newSet.delete(recipeId);
+      } else {
+        newSet.add(recipeId);
+      }
+      return newSet;
+    });
+  };
+
+  // Función para resetear recetas expandidas al cerrar el modal
+  const handleCloseCategoryModal = () => {
+    setShowCategoryModal(false);
+    setCategoryForModal('');
+    setExpandedRecipes(new Set());
+  };
 
   // Función para calcular estadísticas por categoría
   const getCategoryStats = (categoryName) => {
@@ -410,32 +602,9 @@ const RecipeManagement = () => {
       return {
         count: 0,
         hasRecipes: false,
-        mostCommonDifficulty: null,
-        averageTime: null,
         latestRecipes: []
       };
     }
-
-    // Calcular dificultad más común
-    const difficultyCounts = {};
-    categoryRecipes.forEach(recipe => {
-      difficultyCounts[recipe.difficulty] = (difficultyCounts[recipe.difficulty] || 0) + 1;
-    });
-    const mostCommonDifficulty = Object.keys(difficultyCounts).reduce((a, b) => 
-      difficultyCounts[a] > difficultyCounts[b] ? a : b
-    );
-
-    // Calcular tiempo promedio (extraer números de "30 min", "15 min", etc.)
-    const times = categoryRecipes
-      .map(recipe => {
-        const match = recipe.preparation_time?.match(/(\d+)/);
-        return match ? parseInt(match[1]) : 0;
-      })
-      .filter(time => time > 0);
-    
-    const averageTime = times.length > 0 
-      ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-      : null;
 
     // Obtener últimas 3 recetas ordenadas por fecha
     const latestRecipes = [...categoryRecipes]
@@ -445,8 +614,6 @@ const RecipeManagement = () => {
     return {
       count: categoryRecipes.length,
       hasRecipes: true,
-      mostCommonDifficulty,
-      averageTime,
       latestRecipes
     };
   };
@@ -916,7 +1083,7 @@ const RecipeManagement = () => {
           </div>
                 {/* Indicador de estado - Opción 4 */}
                 <div className={`h-2 w-2 rounded-full ${
-                  isEmpty ? 'bg-gray-300' : 'bg-green-500'
+                  isEmpty ? 'bg-gray-300' : 'bg-blue-500'
                 }`} title={isEmpty ? 'Sin recetas' : `${stats.count} receta(s)`}></div>
           </div>
 
@@ -942,24 +1109,6 @@ const RecipeManagement = () => {
               {/* Estadísticas - Opción 3 */}
               {stats.hasRecipes && (
                 <div className="mb-3 space-y-1.5">
-                  {stats.mostCommonDifficulty && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                        stats.mostCommonDifficulty === 'Fácil' ? 'bg-green-100 text-green-700' :
-                        stats.mostCommonDifficulty === 'Media' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {stats.mostCommonDifficulty}
-                      </span>
-                      <span className="text-gray-500">más común</span>
-                    </div>
-                  )}
-                  {stats.averageTime && (
-                    <div className="text-xs text-gray-600">
-                      <span className="font-medium">{stats.averageTime} min</span>
-                      <span className="text-gray-500"> promedio</span>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -995,20 +1144,19 @@ const RecipeManagement = () => {
       {/* Modal de crear/editar receta */}
       {(showCreateModal || showEditModal) && (
         <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 modal-backdrop"
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 modal-backdrop flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               if (showEditModal) {
-                setShowEditModal(false);
-                setEditingRecipe(null);
+                handleCloseEditModal();
               } else if (showCreateModal) {
                 handleCloseModal();
               }
             }
           }}
         >
-          <div className="relative top-2 sm:top-4 lg:top-8 mx-auto p-2 sm:p-3 border w-11/12 max-w-3xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="mt-2 flex-1 overflow-y-auto">
+          <div className="relative mx-auto w-full sm:max-w-3xl bg-white shadow-xl rounded-t-lg sm:rounded-lg overflow-hidden flex flex-col max-h-[90vh] mb-4 sm:my-4">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
                 <div className="flex items-center space-x-2">
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900">
@@ -1016,21 +1164,27 @@ const RecipeManagement = () => {
                   </h3>
                   {currentStep === 2 && (
                     <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                      Paso 2/2
+                      Paso 2/3
                     </span>
                   )}
                   {currentStep === 1 && (
                     <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                      Paso 1/2
+                      Paso 1/3
+                    </span>
+                  )}
+                  {currentStep === 3 && (
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                      Paso 3/3
                     </span>
                   )}
                 </div>
                 <button
                   onClick={() => {
-                    handleCloseModal();
-                    setShowEditModal(false);
-                    setPlateIngredients([]);
-                    setCurrentStep(1);
+                    if (showEditModal) {
+                      handleCloseEditModal();
+                    } else {
+                      handleCloseModal();
+                    }
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
                 >
@@ -1055,30 +1209,6 @@ const RecipeManagement = () => {
                     />
                   </div>
                   
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Tiempo de preparación</label>
-                      <input
-                        type="text"
-                        value={newRecipe.preparation_time}
-                        onChange={(e) => setNewRecipe(prev => ({ ...prev, preparation_time: e.target.value }))}
-                        placeholder="Ej: 30 min"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Porciones</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={newRecipe.servings}
-                        onChange={(e) => setNewRecipe(prev => ({ ...prev, servings: parseInt(e.target.value) || 1 }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                      />
-                    </div>
-                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <div>
@@ -1109,37 +1239,102 @@ const RecipeManagement = () => {
                       </select>
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Descripción</label>
+                    <textarea
+                      value={newRecipe.description}
+                      onChange={(e) => setNewRecipe(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Describe la receta (opcional)..."
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base resize-y"
+                    />
+                  </div>
                 </div>
                 )}
 
                 {/* Mensaje cuando está en paso 1 */}
-                {currentStep === 1 && (
+                {currentStep === 1 && plateIngredients.length === 0 && (
                   <div className="space-y-2 sm:space-y-3 order-2 xl:order-3">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                      <div className="text-blue-600 mb-2">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                      <div className="text-gray-500 mb-2">
                         <svg className="mx-auto h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <h3 className="text-sm font-medium text-blue-900 mb-1">
-                        {plateIngredients.length === 0 ? 'Agrega los ingredientes de tu receta' : 'Ingredientes listos'}
+                      <h3 className="text-sm font-medium text-gray-700 mb-1">
+                        Agrega los ingredientes de tu receta
                       </h3>
-                      <p className="text-xs text-blue-700">
-                        {plateIngredients.length === 0 
-                          ? 'Añade los distintos ingredientes para crear tu receta' 
-                          : `Tienes ${plateIngredients.length} ingrediente(s). Cuando termines, haz clic en "Siguiente paso"`
-                        }
+                      <p className="text-xs text-gray-600">
+                        Añade los distintos ingredientes para crear tu receta usando el buscador de arriba
                       </p>
-                      {plateIngredients.length > 0 && (
+                    </div>
+                  </div>
+                )}
+
+                {/* Paso 3: Gestión de pasos de receta */}
+                {currentStep === 3 && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Añadir paso de preparación</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newStepText}
+                          onChange={(e) => setNewStepText(e.target.value)}
+                          placeholder="Describe el paso..."
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                        />
                         <button
-                          onClick={handleNextStep}
-                          className="mt-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                          type="button"
+                          onClick={() => {
+                            const text = (newStepText || '').trim();
+                            if (!text) return;
+                            if (recipeSteps.length >= 25) return;
+                            const nextNumber = recipeSteps.length + 1;
+                            setRecipeSteps(prev => [...prev, { step_number: nextNumber, step_text: text }]);
+                            setNewStepText('');
+                          }}
+                          className="px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                          Siguiente paso
-                          <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
+                          Añadir
                         </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Máximo 25 pasos.</p>
+                    </div>
+                    <div className="space-y-2">
+                      {recipeSteps.length === 0 ? (
+                        <div className="bg-gray-50 rounded-lg p-3 text-center border border-dashed border-gray-300 text-xs text-gray-500">
+                          Aún no has añadido pasos.
+                        </div>
+                      ) : (
+                        <ul className="space-y-2">
+                          {recipeSteps.map((s, idx) => (
+                            <li key={idx} className="flex items-start gap-2 bg-white p-2 rounded border border-gray-200">
+                              <span className="text-xs font-semibold text-gray-600 mt-1">{s.step_number}.</span>
+                              <input
+                                type="text"
+                                value={s.step_text}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setRecipeSteps(prev => prev.map((ps, i) => i === idx ? { ...ps, step_text: val } : ps));
+                                }}
+                                className="flex-1 text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = recipeSteps.filter((_, i) => i !== idx)
+                                    .map((ps, i) => ({ ...ps, step_number: i + 1 }));
+                                  setRecipeSteps(updated);
+                                }}
+                                className="px-2 py-1 text-xs bg-red-50 text-red-600 rounded hover:bg-red-100"
+                              >
+                                Eliminar
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </div>
                   </div>
@@ -1203,21 +1398,47 @@ const RecipeManagement = () => {
                     {currentStep === 1 && (
                       <>
                         {plateIngredients.length > 0 ? (
-                          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-2 sm:p-3 border border-green-200">
-                            <h5 className="text-xs sm:text-sm font-medium text-green-900 mb-2 flex items-center">
-                              
-                              Ingredientes agregados ({plateIngredients.length}) - ¡Ahora completa los datos!
+                          <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+                            <h5 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                              Ingredientes ({plateIngredients.length})
                             </h5>
-                            <div className="space-y-1 sm:space-y-2 max-h-20 sm:max-h-24 overflow-y-auto">
+                            <div className="space-y-1 sm:space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
                               {plateIngredients.map((ingredient, index) => (
                                 <div 
                                   key={ingredient.id} 
-                                  className="flex items-center justify-between bg-white p-2 rounded-lg shadow-sm border border-green-100"
+                                  className="flex items-center justify-between bg-white p-2 rounded-lg shadow-sm border border-gray-200"
                                   style={{...styles.ingredientSlideIn, animationDelay: `${index * 0.1}s`}}
                                 >
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs font-medium text-gray-900 truncate">{ingredient.name}</div>
-                                    <div className="text-xs text-gray-500 truncate">{ingredient.unit}</div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      <select
+                                        value={ingredient.unit || 'g'}
+                                        onChange={(e) => {
+                                          setPlateIngredients(prev => 
+                                            prev.map(item => 
+                                              item.id === ingredient.id 
+                                                ? { ...item, unit: e.target.value }
+                                                : item
+                                            )
+                                          );
+                                        }}
+                                        className="text-xs bg-white border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        title="Cambiar unidad de medida"
+                                      >
+                                        <option value="kg">kg</option>
+                                        <option value="g">g</option>
+                                        <option value="l">l</option>
+                                        <option value="ml">ml</option>
+                                        <option value="unidad">unidad</option>
+                                        <option value="paquete">paquete</option>
+                                        <option value="caja">caja</option>
+                                        <option value="cucharada">cucharada</option>
+                                        <option value="cucharadita">cucharadita</option>
+                                        <option value="taza">taza</option>
+                                        <option value="pizca">pizca</option>
+                                      </select>
+                                    </div>
                                   </div>
                                   <div className="flex items-center space-x-1 flex-shrink-0">
                                     <button
@@ -1234,12 +1455,12 @@ const RecipeManagement = () => {
                                         onChange={handleQuantityChange}
                                         onBlur={() => handleQuantitySubmit(ingredient.id)}
                                         onKeyDown={(e) => handleQuantityKeyPress(e, ingredient.id)}
-                                        className="text-xs font-medium w-5 sm:w-6 text-center bg-white px-1 py-1 rounded border border-green-300 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                        className="text-xs font-medium w-5 sm:w-6 text-center bg-white px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                         autoFocus
                                       />
                                     ) : (
                                       <span 
-                                        className="text-xs font-medium w-5 sm:w-6 text-center bg-green-50 px-1 py-1 rounded cursor-pointer hover:bg-green-100 transition-colors"
+                                        className="text-xs font-medium w-5 sm:w-6 text-center bg-gray-100 px-1 py-1 rounded cursor-pointer hover:bg-gray-200 transition-colors"
                                         onClick={() => handleQuantityClick(ingredient.id, ingredient.quantity)}
                                         title="Haz clic para editar cantidad"
                                       >
@@ -1248,7 +1469,7 @@ const RecipeManagement = () => {
                                     )}
                                     <button
                                       onClick={() => updateIngredientQuantity(ingredient.id, ingredient.quantity + 1)}
-                                      className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center action-btn transition-all duration-200 text-xs"
+                                      className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center action-btn transition-all duration-200 text-xs"
                                       title="Aumentar cantidad"
                                     >
                                       +
@@ -1281,32 +1502,52 @@ const RecipeManagement = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Botones de acción */}
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-3 pt-2 border-t border-gray-200 flex-shrink-0">
+            </div>
+            
+            {/* Botones de acción */}
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 px-4 pb-6 pt-3 sm:p-6 sm:pt-3 border-t border-gray-200 flex-shrink-0 safe-area-inset-bottom">
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                   <button
                     onClick={() => {
-                      handleCloseModal();
-                      setShowEditModal(false);
-                      setPlateIngredients([]);
-                      setCurrentStep(1);
+                      if (showEditModal) {
+                        handleCloseEditModal();
+                      } else {
+                        handleCloseModal();
+                      }
                     }}
                     className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                   >
                     Cancelar
                   </button>
-                  {currentStep === 2 && (
-                    <button
-                      onClick={showCreateModal ? handleCreateRecipe : handleUpdateRecipe}
-                      disabled={!newRecipe.name.trim()}
-                      className="w-full sm:w-auto px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 disabled:hover:bg-blue-600"
-                    >
-                      {showCreateModal ? 'Crear Receta' : 'Actualizar Receta'}
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {currentStep > 1 && (
+                      <button
+                        onClick={handlePrevStep}
+                        className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                      >
+                        Volver
+                      </button>
+                    )}
+                    {currentStep < 3 && (
+                      <button
+                        onClick={handleNextStep}
+                        disabled={(currentStep === 1 && plateIngredients.length === 0) || (currentStep === 2 && !newRecipe.name.trim())}
+                        className="w-full sm:w-auto px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 disabled:hover:bg-blue-600"
+                      >
+                        Siguiente
+                      </button>
+                    )}
+                    {currentStep === 3 && (
+                      <button
+                        onClick={showCreateModal ? handleCreateRecipe : handleUpdateRecipe}
+                        disabled={saving || !newRecipe.name.trim()}
+                        className="w-full sm:w-auto px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 disabled:hover:bg-blue-600"
+                      >
+                        {saving ? 'Guardando...' : (showCreateModal ? 'Crear Receta' : 'Actualizar Receta')}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
             </div>
           </div>
         </div>
@@ -1318,8 +1559,7 @@ const RecipeManagement = () => {
           className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 modal-backdrop flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowCategoryModal(false);
-              setCategoryForModal('');
+              handleCloseCategoryModal();
             }
           }}
         >
@@ -1342,10 +1582,7 @@ const RecipeManagement = () => {
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setShowCategoryModal(false);
-                  setCategoryForModal('');
-                }}
+                onClick={handleCloseCategoryModal}
                 className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
                 aria-label="Cerrar modal"
               >
@@ -1358,86 +1595,148 @@ const RecipeManagement = () => {
             {/* Contenido con scroll */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               {recipesByCategory.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {recipesByCategory.map((recipe) => (
-                    <div key={recipe.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 recipe-card group">
-                      <div className="p-4 sm:p-6">
-                        <div className="flex items-start justify-between mb-3 sm:mb-4">
-                          <div className="flex-1 min-w-0 pr-2">
-                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2 truncate">{recipe.name}</h3>
-                            <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{recipe.description}</p>
-                          </div>
-                          <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
-                            <button
-                              onClick={() => {
-                                setShowCategoryModal(false);
-                                setCategoryForModal('');
-                                handleEditRecipe(recipe);
-                              }}
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-200"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleDeleteRecipe(recipe.id);
-                                if (recipesByCategory.length === 1) {
-                                  setShowCategoryModal(false);
-                                  setCategoryForModal('');
-                                }
-                              }}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-200"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                            recipe.difficulty === 'Fácil' ? 'difficulty-easy' :
-                            recipe.difficulty === 'Media' ? 'difficulty-medium' :
-                            'difficulty-hard'
-                          }`}>
-                            {recipe.difficulty}
-                          </span>
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            {recipe.category}
-                          </span>
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                            {recipe.preparation_time}
-                          </span>
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
-                            {recipe.servings} porciones
-                          </span>
-                        </div>
-
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Ingredientes:</h4>
-                          <div className="space-y-1">
-                            {recipe.ingredients?.slice(0, 3).map((ingredient, index) => (
-                              <div key={index} className="text-sm text-gray-600">
-                                • {ingredient.name} - {ingredient.quantity} {ingredient.unit}
-                              </div>
-                            ))}
-                            {recipe.ingredients?.length > 3 && (
-                              <div className="text-sm text-gray-500">
-                                +{recipe.ingredients.length - 3} ingredientes más...
-                              </div>
+                <div className="space-y-3">
+                  {recipesByCategory.map((recipe) => {
+                    const isExpanded = expandedRecipes.has(recipe.id);
+                    return (
+                      <div 
+                        key={recipe.id} 
+                        className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300"
+                      >
+                        {/* Header clickeable */}
+                        <button
+                          onClick={() => toggleRecipeExpand(recipe.id)}
+                          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200 text-left"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 truncate">
+                              {recipe.name}
+                            </h3>
+                            {recipe.description && (
+                              <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">
+                                {recipe.description}
+                              </p>
                             )}
                           </div>
-                        </div>
+                          <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+                            <div className="flex flex-wrap gap-2">
+                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                {recipe.category}
+                              </span>
+                              {recipe.difficulty && (
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  recipe.difficulty === 'Fácil' ? 'bg-green-100 text-green-700' :
+                                  recipe.difficulty === 'Media' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-red-100 text-red-700'
+                                }`}>
+                                  {recipe.difficulty}
+                                </span>
+                              )}
+                            </div>
+                            <svg 
+                              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </button>
 
-                        <div className="text-xs text-gray-500">
-                          Creada: {new Date(recipe.created_at).toLocaleDateString('es-ES')}
-                        </div>
+                        {/* Contenido expandible */}
+                        {isExpanded && (
+                          <div className="px-4 pb-4 border-t border-gray-100">
+                            <div className="pt-4 space-y-4">
+                              {recipe.ingredients && recipe.ingredients.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                    Ingredientes ({recipe.ingredients.length}):
+                                  </h4>
+                                  <div className="space-y-1">
+                                    {recipe.ingredients.map((ingredient, index) => (
+                                      <div key={index} className="text-sm text-gray-600 flex items-center">
+                                        <span className="mr-2">•</span>
+                                        <span className="flex-1">
+                                          {ingredient.name} - {ingredient.quantity} {ingredient.unit}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {recipe.steps && recipe.steps.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                                    Pasos de preparación:
+                                  </h4>
+                                  <div className="relative">
+                                    {recipe.steps.map((step, index) => (
+                                      <div key={index} className="relative flex items-start pb-6">
+                                        {/* Línea discontinua vertical (excepto en el último paso) */}
+                                        {index < recipe.steps.length - 1 && (
+                                          <div className="absolute left-[10px] top-6 bottom-0">
+                                            <svg className="h-full" width="2" viewBox="0 0 2 100" preserveAspectRatio="none">
+                                              <line x1="1" y1="0" x2="1" y2="100" stroke="#D1D5DB" strokeWidth="2" strokeDasharray="4 4" />
+                                            </svg>
+                                          </div>
+                                        )}
+                                        {/* Círculo del paso */}
+                                        <div className="relative z-10 flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 border-2 border-white shadow-sm flex items-center justify-center mr-3 mt-0.5">
+                                          <span className="text-xs font-semibold text-white">{step.step_number}</span>
+                                        </div>
+                                        {/* Texto del paso */}
+                                        <div className="flex-1">
+                                          <p className="text-sm text-gray-700 leading-relaxed">{step.step_text}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                <div className="text-xs text-gray-500">
+                                  Creada: {new Date(recipe.created_at).toLocaleDateString('es-ES')}
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCloseCategoryModal();
+                                      handleEditRecipe(recipe);
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-200"
+                                    title="Editar receta"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteRecipe(recipe.id);
+                                      if (recipesByCategory.length === 1) {
+                                        handleCloseCategoryModal();
+                                      }
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-200"
+                                    title="Eliminar receta"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -1449,8 +1748,7 @@ const RecipeManagement = () => {
                   <div className="mt-6">
                     <button
                       onClick={() => {
-                        setShowCategoryModal(false);
-                        setCategoryForModal('');
+                        handleCloseCategoryModal();
                         setShowCreateModal(true);
                       }}
                       className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -1499,22 +1797,18 @@ const RecipeManagement = () => {
               </div>
 
               <div className="flex flex-wrap gap-2 mb-4">
-                <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                  recipe.difficulty === 'Fácil' ? 'difficulty-easy' :
-                  recipe.difficulty === 'Media' ? 'difficulty-medium' :
-                  'difficulty-hard'
-                }`}>
-                  {recipe.difficulty}
-                </span>
                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                   {recipe.category}
                 </span>
-                <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                  {recipe.preparation_time}
-                </span>
-                <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
-                  {recipe.servings} porciones
-                </span>
+                {recipe.difficulty && (
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    recipe.difficulty === 'Fácil' ? 'bg-green-100 text-green-700' :
+                    recipe.difficulty === 'Media' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {recipe.difficulty}
+                  </span>
+                )}
               </div>
 
               <div className="mb-4">

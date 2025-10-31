@@ -759,6 +759,80 @@ export const database = {
       console.error('Error al obtener estadísticas de inventario por proveedor:', error)
       return { success: false, error: error.message }
     }
+  },
+
+  // Obtener recetas con sus ingredientes y pasos
+  async getRecipes(userId) {
+    try {
+      const { data: recipes, error: recipesError } = await supabase
+        .from('inventory_recipes')
+        .select(`
+          id,
+          recipe_id,
+          recipe_name,
+          recipe_category,
+          difficulty,
+          notes,
+          created_at,
+          recipe_ingredients(
+            id,
+            ingredient_id,
+            quantity,
+            unit_measure,
+            position,
+            notes,
+            ingredients(
+              id,
+              name,
+              unit_measure
+            )
+          ),
+          recipe_steps(
+            id,
+            step_number,
+            step_text
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      
+      if (recipesError) throw recipesError
+
+      // Transformar los datos al formato esperado por el componente
+      const transformedRecipes = recipes.map(recipe => ({
+        id: recipe.id,
+        name: recipe.recipe_name,
+        description: recipe.notes || '',
+        difficulty: recipe.difficulty || 'Fácil',
+        category: recipe.recipe_category,
+        ingredients: (recipe.recipe_ingredients || [])
+          .sort((a, b) => (a.position || 0) - (b.position || 0))
+          .map((ri, idx) => ({
+            id: ri.id,
+            ingredientRefId: ri.ingredient_id,
+            name: ri.ingredients?.name || '',
+            quantity: parseFloat(ri.quantity) || 0,
+            unit: ri.unit_measure || 'g',
+            position: {
+              x: Math.random() * 40 + 30,
+              y: Math.random() * 20 + 60
+            },
+            notes: ri.notes
+          })),
+        steps: (recipe.recipe_steps || [])
+          .sort((a, b) => a.step_number - b.step_number)
+          .map(step => ({
+            step_number: step.step_number,
+            step_text: step.step_text
+          })),
+        created_at: recipe.created_at
+      }))
+
+      return { success: true, data: transformedRecipes }
+    } catch (error) {
+      console.error('Error al obtener recetas:', error)
+      return { success: false, error: error.message }
+    }
   }
 }
 
