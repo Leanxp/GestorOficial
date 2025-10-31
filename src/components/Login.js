@@ -53,9 +53,10 @@ const Login = () => {
         <div className="space-y-4">
           <div className="flex justify-center">
             <img
-              className="h-40 w-auto rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300"
-              src="/logo.png"
+              className="h-40 w-auto object-contain transform hover:scale-105 transition-transform duration-300"
+              src="/fresisui_logo1.png"
               alt="Logo del restaurante"
+              style={{ backgroundColor: 'transparent' }}
             />
           </div>
           

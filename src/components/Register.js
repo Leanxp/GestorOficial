@@ -34,9 +34,10 @@ const Register = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <img
-              className="h-12 w-12 rounded-2xl shadow-lg"
-              src="/logo.png"
+              className="h-12 w-12 object-contain"
+              src="/fresisui_logo1.png"
               alt="Logo del restaurante"
+              style={{ backgroundColor: 'transparent' }}
             />
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Crear cuenta</h2>
