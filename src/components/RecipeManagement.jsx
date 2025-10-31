@@ -1563,7 +1563,7 @@ const RecipeManagement = () => {
             }
           }}
         >
-          <div className="relative mx-auto w-full sm:max-w-6xl bg-white shadow-xl rounded-t-lg sm:rounded-lg overflow-hidden flex flex-col max-h-[90vh] sm:my-4">
+          <div className="relative mx-auto w-full sm:max-w-6xl bg-white shadow-xl rounded-t-lg sm:rounded-lg overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] mt-16 sm:mt-0 mb-0 sm:my-4">
             {/* Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
