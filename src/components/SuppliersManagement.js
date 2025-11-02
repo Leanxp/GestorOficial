@@ -994,7 +994,7 @@ const SuppliersManagement = () => {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, () => setShowAddModal(false))}
         >
-          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-2xl h-[85vh] sm:h-auto sm:max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
             {/* Header fijo */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
@@ -1022,8 +1022,8 @@ const SuppliersManagement = () => {
             </div>
             
             {/* Contenido scrolleable */}
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-              <form onSubmit={handleAddSupplier} className="space-y-3 sm:space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 min-h-0">
+              <form onSubmit={handleAddSupplier} id="add-supplier-form" className="space-y-3 sm:space-y-4">
                 <div className="space-y-2 sm:space-y-3">
                   <div>
                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Nombre del Proveedor</label>
@@ -1085,23 +1085,27 @@ const SuppliersManagement = () => {
                     />
                   </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-                  >
-                    Guardar Proveedor
-                  </button>
-                </div>
               </form>
+            </div>
+
+            {/* Footer fijo con botones */}
+            <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  form="add-supplier-form"
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  Guardar Proveedor
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1110,12 +1114,12 @@ const SuppliersManagement = () => {
       {/* Modal para agregar ingrediente - Mejorado y visual */}
       {showAddIngredientModal && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, () => setShowAddIngredientModal(false))}
         >
-          <div className="bg-white rounded-2xl w-full max-w-sm sm:max-w-md shadow-2xl transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-full sm:max-w-sm md:max-w-md shadow-2xl transform transition-all duration-300 scale-100 max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header mejorado */}
-            <div className="bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
@@ -1127,20 +1131,22 @@ const SuppliersManagement = () => {
                     <h2 className="text-xl font-bold text-gray-900">Agregar Ingrediente</h2>
                     <p className="text-gray-600 text-sm">Añadir nuevo ingrediente al proveedor</p>
                   </div>
-              </div>
+                </div>
                 <button
                   onClick={() => setShowAddIngredientModal(false)}
                   className="p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-110"
                 >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             </div>
 
-            {/* Formulario mejorado */}
-            <form onSubmit={handleAddIngredient} className="p-6 space-y-6">
+            {/* Contenido scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6 min-h-0">
+              {/* Formulario mejorado */}
+              <form onSubmit={handleAddIngredient} id="add-ingredient-form" className="space-y-6">
               {/* Selector de ingrediente con búsqueda visual */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -1257,8 +1263,12 @@ const SuppliersManagement = () => {
                 <p className="text-xs text-gray-500">Información adicional que pueda ser útil</p>
               </div>
 
-              {/* Botones mejorados */}
-              <div className="flex gap-3 pt-4">
+              </form>
+            </div>
+
+            {/* Footer fijo con botones */}
+            <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setShowAddIngredientModal(false)}
@@ -1268,12 +1278,13 @@ const SuppliersManagement = () => {
                 </button>
                 <button
                   type="submit"
+                  form="add-ingredient-form"
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   Agregar Ingrediente
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -1281,12 +1292,12 @@ const SuppliersManagement = () => {
       {/* Modal para visualizar ingredientes del proveedor */}
       {showViewIngredientsModal && selectedSupplierForView && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, () => setShowViewIngredientsModal(false))}
         >
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] shadow-2xl transform transition-all duration-300 scale-100 overflow-hidden">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-full sm:max-w-4xl max-h-[85vh] sm:max-h-[90vh] shadow-2xl transform transition-all duration-300 scale-100 overflow-hidden flex flex-col">
             {/* Header del modal */}
-            <div className="bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
@@ -1329,7 +1340,7 @@ const SuppliersManagement = () => {
             </div>
 
             {/* Contenido del modal */}
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-6 min-h-0">
               {supplierIngredients[selectedSupplierForView.id]?.length > 0 ? (
                 <div className="space-y-2">
                   {supplierIngredients[selectedSupplierForView.id].map((ingredient, index) => (
@@ -1406,12 +1417,12 @@ const SuppliersManagement = () => {
       {/* Modal para editar ingrediente */}
       {showEditIngredientModal && selectedIngredient && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, () => setShowEditIngredientModal(false))}
         >
-          <div className="bg-white rounded-2xl w-full max-w-sm sm:max-w-md shadow-2xl transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-full sm:max-w-sm md:max-w-md shadow-2xl transform transition-all duration-300 scale-100 max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header del modal */}
-            <div className="bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -1435,8 +1446,10 @@ const SuppliersManagement = () => {
               </div>
             </div>
 
-            {/* Formulario de edición */}
-            <form onSubmit={handleEditIngredient} className="p-6 space-y-6">
+            {/* Contenido scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6 min-h-0">
+              {/* Formulario de edición */}
+              <form onSubmit={handleEditIngredient} id="edit-ingredient-form" className="space-y-6">
               {/* Selector de ingrediente */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
@@ -1674,8 +1687,12 @@ const SuppliersManagement = () => {
                 <p className="text-xs text-gray-500">Marca los alérgenos que contiene este ingrediente</p>
               </div>
 
-              {/* Botones */}
-              <div className="flex gap-3 pt-4">
+              </form>
+            </div>
+
+            {/* Footer fijo con botones */}
+            <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setShowEditIngredientModal(false)}
@@ -1685,12 +1702,13 @@ const SuppliersManagement = () => {
                 </button>
                 <button
                   type="submit"
+                  form="edit-ingredient-form"
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   Guardar Cambios
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -1922,12 +1940,12 @@ const SuppliersManagement = () => {
       {/* Modal para crear nuevo ingrediente */}
       {showCreateIngredientModal && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[70] p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, () => setShowCreateIngredientModal(false))}
         >
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-full sm:max-w-md shadow-2xl transform transition-all duration-300 scale-100 max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header del modal */}
-            <div className="bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -1951,8 +1969,10 @@ const SuppliersManagement = () => {
               </div>
             </div>
 
-            {/* Formulario de creación */}
-            <form onSubmit={handleCreateIngredient} className="p-6 space-y-6">
+            {/* Contenido scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6 min-h-0">
+              {/* Formulario de creación */}
+              <form onSubmit={handleCreateIngredient} id="create-ingredient-form" className="space-y-6">
               {/* Nombre del ingrediente */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
@@ -2246,8 +2266,12 @@ const SuppliersManagement = () => {
                 <p className="text-xs text-gray-500">Marca los alérgenos que contiene este ingrediente</p>
               </div>
 
-              {/* Botones */}
-              <div className="flex gap-3 pt-4">
+              </form>
+            </div>
+
+            {/* Footer fijo con botones */}
+            <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setShowCreateIngredientModal(false)}
@@ -2257,12 +2281,13 @@ const SuppliersManagement = () => {
                 </button>
                 <button
                   type="submit"
+                  form="create-ingredient-form"
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   Crear Ingrediente
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -2270,12 +2295,12 @@ const SuppliersManagement = () => {
       {/* Modal para crear nueva categoría */}
       {showCreateCategoryModal && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[80] p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[80] p-0 sm:p-4"
           onClick={(e) => handleModalBackdropClick(e, () => setShowCreateCategoryModal(false))}
         >
-          <div className="bg-white rounded-2xl w-full max-w-sm sm:max-w-md shadow-2xl transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-full sm:max-w-sm md:max-w-md shadow-2xl transform transition-all duration-300 scale-100 max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header del modal */}
-            <div className="bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
@@ -2299,8 +2324,10 @@ const SuppliersManagement = () => {
               </div>
             </div>
 
-            {/* Formulario de creación */}
-            <form onSubmit={handleCreateCategory} className="p-6 space-y-6">
+            {/* Contenido scrolleable */}
+            <div className="flex-1 overflow-y-auto p-6 min-h-0">
+              {/* Formulario de creación */}
+              <form onSubmit={handleCreateCategory} id="create-category-form" className="space-y-6">
               {/* Nombre de la categoría */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
@@ -2341,8 +2368,12 @@ const SuppliersManagement = () => {
                 />
               </div>
 
-              {/* Botones */}
-              <div className="flex gap-3 pt-4">
+              </form>
+            </div>
+
+            {/* Footer fijo con botones */}
+            <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setShowCreateCategoryModal(false)}
@@ -2352,12 +2383,13 @@ const SuppliersManagement = () => {
                 </button>
                 <button
                   type="submit"
+                  form="create-category-form"
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl font-semibold hover:from-orange-700 hover:to-orange-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   Crear Categoría
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
