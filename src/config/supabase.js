@@ -102,6 +102,97 @@ export const auth = {
   }
 }
 
+// Función auxiliar para convertir unidades
+const convertUnit = (quantity, fromUnit, toUnit) => {
+  if (fromUnit === toUnit) return quantity
+  
+  // Conversiones culinarias a unidades estándar (primero convertir a g o ml)
+  const culinaryToStandard = {
+    'cucharada': { 'g': 15, 'ml': 15 },      // 1 cucharada = 15g o 15ml
+    'cucharadita': { 'g': 5, 'ml': 5 },     // 1 cucharadita = 5g o 5ml
+    'taza': { 'g': 200, 'ml': 250 },        // 1 taza = 200g (sólidos) o 250ml (líquidos)
+    'unidad': { 'g': 100 }                  // 1 unidad ≈ 100g promedio (variable según producto)
+  }
+  
+  // Conversiones comunes de masa
+  const massConversions = {
+    'kg': { 'g': 1000, 'mg': 1000000 },
+    'g': { 'kg': 0.001, 'mg': 1000 },
+    'mg': { 'kg': 0.000001, 'g': 0.001 }
+  }
+  
+  // Conversiones comunes de volumen
+  const volumeConversions = {
+    'l': { 'ml': 1000 },
+    'ml': { 'l': 0.001 }
+  }
+  
+  // Detectar si el destino es unidad de masa o volumen
+  const massUnits = ['kg', 'g', 'mg']
+  const volumeUnits = ['l', 'ml']
+  const isToMass = massUnits.includes(toUnit)
+  const isToVolume = volumeUnits.includes(toUnit)
+  
+  // Si la unidad origen es culinaria, primero convertir a estándar
+  if (culinaryToStandard[fromUnit]) {
+    let convertedQuantity
+    
+    if (isToMass) {
+      // Convertir a gramos primero (usar conversión a g)
+      convertedQuantity = quantity * (culinaryToStandard[fromUnit]['g'] || culinaryToStandard[fromUnit]['ml'])
+      // Luego convertir a la unidad de masa destino
+      if (massConversions['g'] && massConversions['g'][toUnit]) {
+        return convertedQuantity * massConversions['g'][toUnit]
+      }
+      return convertedQuantity
+    } else if (isToVolume) {
+      // Convertir a mililitros primero (usar conversión a ml)
+      convertedQuantity = quantity * (culinaryToStandard[fromUnit]['ml'] || culinaryToStandard[fromUnit]['g'])
+      // Luego convertir a la unidad de volumen destino
+      if (volumeConversions['ml'] && volumeConversions['ml'][toUnit]) {
+        return convertedQuantity * volumeConversions['ml'][toUnit]
+      }
+      return convertedQuantity
+    } else if (toUnit === 'unidad') {
+      // Si destino es unidad y origen es culinaria, no hay conversión directa
+      // Asumir que es 1 a 1 pero ajustado por el factor de la unidad culinaria
+      return quantity
+    }
+  }
+  
+  // Si la unidad origen es "unidad" y destino es masa/volumen
+  if (fromUnit === 'unidad' && isToMass) {
+    // Convertir unidad a gramos y luego a la unidad destino
+    const grams = quantity * (culinaryToStandard['unidad']['g'] || 100)
+    if (massConversions['g'] && massConversions['g'][toUnit]) {
+      return grams * massConversions['g'][toUnit]
+    }
+    return grams
+  }
+  
+  if (fromUnit === 'unidad' && isToVolume) {
+    // Para unidades a volumen, usar factor similar (asumir que 1 unidad ≈ 100ml)
+    const ml = quantity * 100
+    if (volumeConversions['ml'] && volumeConversions['ml'][toUnit]) {
+      return ml * volumeConversions['ml'][toUnit]
+    }
+    return ml
+  }
+  
+  // Si son unidades de masa
+  if (massConversions[fromUnit] && massConversions[fromUnit][toUnit]) {
+    return quantity * massConversions[fromUnit][toUnit]
+  }
+  
+  // Si son unidades de volumen
+  if (volumeConversions[fromUnit] && volumeConversions[fromUnit][toUnit]) {
+    return quantity * volumeConversions[fromUnit][toUnit]
+  }
+  
+  // Si no hay conversión disponible, asumir que son la misma unidad
+  return quantity
+}
+
 // Funciones para la base de datos
 export const database = {
   // Obtener el user_id del usuario autenticado
@@ -798,35 +889,92 @@ export const database = {
       
       if (recipesError) throw recipesError
 
+      // Obtener todos los supplier_ingredients para el cálculo de costes
+      const { data: supplierIngredients, error: supplierError } = await supabase
+        .from('supplier_ingredients')
+        .select(`
+          id,
+          ingredient_id,
+          supplier_price,
+          supplier_unit
+        `)
+        .eq('user_id', userId)
+
+      if (supplierError) {
+        console.warn('Error al obtener supplier_ingredients:', supplierError)
+      }
+
+      // Crear un mapa de precios por ingrediente (usar el precio más bajo si hay múltiples proveedores)
+      const priceMap = {}
+      if (supplierIngredients) {
+        supplierIngredients.forEach(si => {
+          const ingId = si.ingredient_id
+          const price = parseFloat(si.supplier_price) || 0
+          if (!priceMap[ingId] || price < priceMap[ingId].price) {
+            priceMap[ingId] = {
+              price: price,
+              unit: si.supplier_unit || 'unidad'
+            }
+          }
+        })
+      }
+
       // Transformar los datos al formato esperado por el componente
-      const transformedRecipes = recipes.map(recipe => ({
-        id: recipe.id,
-        name: recipe.recipe_name,
-        description: recipe.notes || '',
-        difficulty: recipe.difficulty || 'Fácil',
-        category: recipe.recipe_category,
-        ingredients: (recipe.recipe_ingredients || [])
+      const transformedRecipes = recipes.map(recipe => {
+        // Calcular el coste de la receta
+        let totalCost = 0
+        const recipeIngredients = (recipe.recipe_ingredients || [])
           .sort((a, b) => (a.position || 0) - (b.position || 0))
-          .map((ri, idx) => ({
-            id: ri.id,
-            ingredientRefId: ri.ingredient_id,
-            name: ri.ingredients?.name || '',
-            quantity: parseFloat(ri.quantity) || 0,
-            unit: ri.unit_measure || 'g',
-            position: {
-              x: Math.random() * 40 + 30,
-              y: Math.random() * 20 + 60
-            },
-            notes: ri.notes
-          })),
-        steps: (recipe.recipe_steps || [])
-          .sort((a, b) => a.step_number - b.step_number)
-          .map(step => ({
-            step_number: step.step_number,
-            step_text: step.step_text
-          })),
-        created_at: recipe.created_at
-      }))
+          .map((ri, idx) => {
+            const ingredientRefId = ri.ingredient_id
+            const recipeQuantity = parseFloat(ri.quantity) || 0
+            const recipeUnit = ri.unit_measure || 'g'
+            
+            // Calcular coste del ingrediente si hay precio disponible
+            let ingredientCost = 0
+            if (priceMap[ingredientRefId]) {
+              const supplierPrice = priceMap[ingredientRefId].price
+              const supplierUnit = priceMap[ingredientRefId].unit
+              
+              // Convertir unidades si es necesario
+              const convertedQuantity = convertUnit(recipeQuantity, recipeUnit, supplierUnit)
+              ingredientCost = convertedQuantity * supplierPrice
+            }
+            
+            totalCost += ingredientCost
+            
+            return {
+              id: ri.id,
+              ingredientRefId: ingredientRefId,
+              name: ri.ingredients?.name || '',
+              quantity: recipeQuantity,
+              unit: recipeUnit,
+              position: {
+                x: Math.random() * 40 + 30,
+                y: Math.random() * 20 + 60
+              },
+              notes: ri.notes,
+              cost: ingredientCost
+            }
+          })
+
+        return {
+          id: recipe.id,
+          name: recipe.recipe_name,
+          description: recipe.notes || '',
+          difficulty: recipe.difficulty || 'Fácil',
+          category: recipe.recipe_category,
+          ingredients: recipeIngredients,
+          steps: (recipe.recipe_steps || [])
+            .sort((a, b) => a.step_number - b.step_number)
+            .map(step => ({
+              step_number: step.step_number,
+              step_text: step.step_text
+            })),
+          cost: totalCost,
+          created_at: recipe.created_at
+        }
+      })
 
       return { success: true, data: transformedRecipes }
     } catch (error) {

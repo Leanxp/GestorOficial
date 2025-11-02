@@ -296,6 +296,7 @@ const RecipeManagement = () => {
         unit: ingredient.ingredients?.unit_measure || 'unidad',
         // Referencia al id de la tabla ingredients (necesario para recipe_ingredients)
         ingredientRefId: ingredient.ingredient_id,
+        supplierName: ingredient.suppliers?.name || null,
         position: { x: Math.random() * 40 + 30, y: Math.random() * 20 + 60 }
       };
       
@@ -1253,25 +1254,6 @@ const RecipeManagement = () => {
                 </div>
                 )}
 
-                {/* Mensaje cuando está en paso 1 */}
-                {currentStep === 1 && plateIngredients.length === 0 && (
-                  <div className="space-y-2 sm:space-y-3 order-2 xl:order-3">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                      <div className="text-gray-500 mb-2">
-                        <svg className="mx-auto h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-sm font-medium text-gray-700 mb-1">
-                        Agrega los ingredientes de tu receta
-                      </h3>
-                      <p className="text-xs text-gray-600">
-                        Añade los distintos ingredientes para crear tu receta usando el buscador de arriba
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {/* Paso 3: Gestión de pasos de receta */}
                 {currentStep === 3 && (
                   <div className="space-y-3">
@@ -1375,15 +1357,20 @@ const RecipeManagement = () => {
                                   onClick={() => handleAddIngredient(item)}
                                   className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center justify-between"
                                 >
-                                  <div>
+                                  <div className="flex-1 min-w-0">
                                     <div className="font-medium text-gray-900">
                                       {item.ingredients?.name || 'Sin nombre'}
                                     </div>
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-gray-500 mt-0.5">
                                       Disponible: {item.quantity} {item.ingredients?.unit_measure || 'unidad'}
                                     </div>
+                                    {item.suppliers?.name && (
+                                      <div className="text-xs text-indigo-600 mt-0.5 font-medium">
+                                        Proveedor: {item.suppliers.name}
+                                      </div>
+                                    )}
                                   </div>
-                                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-4 h-4 text-blue-500 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                   </svg>
                                 </button>
@@ -1411,6 +1398,11 @@ const RecipeManagement = () => {
                                 >
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs font-medium text-gray-900 truncate">{ingredient.name}</div>
+                                    {ingredient.supplierName && (
+                                      <div className="text-xs text-indigo-600 mt-0.5 font-medium">
+                                        Proveedor: {ingredient.supplierName}
+                                      </div>
+                                    )}
                                     <div className="text-xs text-gray-500 mt-1">
                                       <select
                                         value={ingredient.unit || 'g'}
@@ -1431,12 +1423,9 @@ const RecipeManagement = () => {
                                         <option value="l">l</option>
                                         <option value="ml">ml</option>
                                         <option value="unidad">unidad</option>
-                                        <option value="paquete">paquete</option>
-                                        <option value="caja">caja</option>
                                         <option value="cucharada">cucharada</option>
                                         <option value="cucharadita">cucharadita</option>
                                         <option value="taza">taza</option>
-                                        <option value="pizca">pizca</option>
                                       </select>
                                     </div>
                                   </div>
@@ -1619,20 +1608,15 @@ const RecipeManagement = () => {
                             )}
                           </div>
                           <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
-                            <div className="flex flex-wrap gap-2">
-                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                                {recipe.category}
+                            {recipe.difficulty && (
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                recipe.difficulty === 'Fácil' ? 'bg-green-100 text-green-700' :
+                                recipe.difficulty === 'Media' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {recipe.difficulty}
                               </span>
-                              {recipe.difficulty && (
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  recipe.difficulty === 'Fácil' ? 'bg-green-100 text-green-700' :
-                                  recipe.difficulty === 'Media' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-red-100 text-red-700'
-                                }`}>
-                                  {recipe.difficulty}
-                                </span>
-                              )}
-                            </div>
+                            )}
                             <svg 
                               className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                               fill="none" 
@@ -1695,6 +1679,14 @@ const RecipeManagement = () => {
                                   </div>
                                 </div>
                               )}
+
+                              {/* Coste de la receta */}
+                              <div className="flex items-center space-x-3 py-3 border-t border-gray-100">
+                                <span className="text-sm font-medium text-gray-600">Coste:</span>
+                                <span className="inline-flex items-center px-3 py-1.5 rounded-md text-base font-semibold bg-indigo-100 text-indigo-700">
+                                  {recipe.cost ? `€${parseFloat(recipe.cost).toFixed(2)}` : '€0.00'}
+                                </span>
+                              </div>
 
                               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                                 <div className="text-xs text-gray-500">

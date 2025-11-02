@@ -1706,7 +1706,7 @@ const InventoryManagement = () => {
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-gray-500 mb-1">Precio de Compra</div>
+                          <div className="text-xs text-gray-500 mb-1">Precio de Compra/Unidad</div>
                           <div className="text-sm font-medium text-gray-900 truncate">{item.purchase_price} €</div>
                         </div>
                       </div>
