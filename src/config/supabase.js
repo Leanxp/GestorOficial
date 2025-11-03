@@ -644,6 +644,43 @@ export const database = {
     }
   },
 
+  // Obtener todos los precios de productos comparables entre proveedores
+  async getAllProductPrices(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('supplier_ingredients')
+        .select(`
+          id,
+          supplier_id,
+          ingredient_id,
+          supplier_price,
+          supplier_unit,
+          conversion_factor,
+          notes,
+          ingredients(
+            id,
+            name,
+            unit_measure,
+            categories(name)
+          ),
+          suppliers(
+            id,
+            name,
+            contact_person,
+            email,
+            phone
+          )
+        `)
+        .eq('user_id', userId)
+      
+      if (error) throw error
+      return { success: true, data }
+    } catch (error) {
+      console.error('Error al obtener precios de productos:', error)
+      return { success: false, error: error.message }
+    }
+  },
+
   // Obtener licencia de usuario
   async getUserLicense(email) {
     try {

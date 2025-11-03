@@ -7,6 +7,7 @@ import InventoryManagement from './InventoryManagement';
 import SuppliersManagement from './SuppliersManagement';
 import LicenseManagement from './LicenseManagement';
 import RecipeManagement from './RecipeManagement';
+import Suppliers_Costs from './Suppliers_Costs';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -26,6 +27,8 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentSection, setCurrentSection] = useState('Dashboard');
+  const [showCostsDropdown, setShowCostsDropdown] = useState(false);
+  const [costsSubsection, setCostsSubsection] = useState(null);
   
   const licenseInfo = getLicenseInfo();
 
@@ -49,8 +52,8 @@ const Dashboard = () => {
   const getMenuItems = () => {
     const baseItems = [
       { name: 'Dashboard', icon: 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25' },
+      { name: 'Proveedores', icon: 'M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' },
       { name: 'Gestión de Inventario', icon: 'M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125' },
-      { name: 'Proveedores', icon: 'M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z' },      
       { name: 'Gestión de Recetas', icon: 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V19.5a2.25 2.25 0 002.25 2.25h.75m-1.5-18h.008v.008H12V3.75zm0 0h.008v.008H12V3.75z' },
       { name: 'Planificación de Menús', icon: 'M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25' },
       { name: 'Cálculo de Costos', icon: 'M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.171-.879-1.172-2.303 0-3.182s3.07-.879 4.242 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
@@ -70,34 +73,162 @@ const Dashboard = () => {
 
   const menuItems = getMenuItems();
 
-  const renderMenuItem = (item, isMobile = false) => (
-    <button
-      key={item.name}
-      onClick={() => {
-        setCurrentSection(item.name);
-        // Cerrar el menú móvil cuando se selecciona una sección
-        if (isMobile) {
-          setSidebarOpen(false);
-        }
-      }}
-      className={`group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium ${
-        currentSection === item.name ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-      }`}
-    >
-      <svg
-        className="mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth="1.5"
-        stroke="currentColor"
+  const costsSubsections = [
+    { name: 'Proveedores', value: 'costs-suppliers' },
+    { name: 'Inventario', value: 'costs-inventory' },
+    { name: 'Menús', value: 'costs-menus' }
+  ];
+
+  const handleCostsClick = (isMobile = false) => {
+    const newDropdownState = !showCostsDropdown;
+    setShowCostsDropdown(newDropdownState);
+    
+    // Si no hay subsección seleccionada y se cierra el desplegable, mantener "Cálculo de Costos" como activo
+    if (costsSubsection === null) {
+      setCurrentSection('Cálculo de Costos');
+    }
+  };
+
+  const handleCostsSubsectionClick = (subsection, isMobile = false) => {
+    setCostsSubsection(subsection.value);
+    setCurrentSection(`Cálculo de Costos - ${subsection.name}`);
+    if (isMobile) {
+      setSidebarOpen(false);
+      setShowCostsDropdown(false);
+    }
+  };
+
+  const renderCostsMenuItem = (item, isMobile = false, sidebarCollapsed = false) => {
+    const isActive = showCostsDropdown || costsSubsection !== null || currentSection === 'Cálculo de Costos' || currentSection.startsWith('Cálculo de Costos -');
+    
+    const handleClick = () => {
+      if (sidebarCollapsed) {
+        // Si el sidebar está colapsado, simplemente establecer la sección
+        setCurrentSection('Cálculo de Costos');
+        setShowCostsDropdown(false);
+      } else {
+        handleCostsClick(isMobile);
+      }
+    };
+    
+    return (
+      <div key={item.name}>
+        <button
+          onClick={handleClick}
+          className={`group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`}
+        >
+          <svg
+            className="mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="1.5"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+          </svg>
+          {!sidebarCollapsed && (
+            <>
+              <span className="flex-1 text-left">{item.name}</span>
+              <svg
+                className={`h-4 w-4 transition-transform ${showCostsDropdown ? 'rotate-90' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </>
+          )}
+        </button>
+        {showCostsDropdown && !sidebarCollapsed && (
+          <div className="ml-6 mt-1 space-y-1">
+            {costsSubsections.map((subsection) => (
+              <button
+                key={subsection.value}
+                onClick={() => handleCostsSubsectionClick(subsection, isMobile)}
+                className={`group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium ${
+                  costsSubsection === subsection.value
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <span className="ml-2">{subsection.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderMenuItem = (item, isMobile = false, sidebarCollapsed = false) => {
+    // Si es "Cálculo de Costos", usar el renderizado especial
+    if (item.name === 'Cálculo de Costos') {
+      return renderCostsMenuItem(item, isMobile, sidebarCollapsed);
+    }
+
+    // Para los demás items, usar el renderizado normal
+    return (
+      <button
+        key={item.name}
+        onClick={() => {
+          setCurrentSection(item.name);
+          // Cerrar el desplegable de costos si estaba abierto
+          if (showCostsDropdown) {
+            setShowCostsDropdown(false);
+            setCostsSubsection(null);
+          }
+          // Cerrar el menú móvil cuando se selecciona una sección
+          if (isMobile) {
+            setSidebarOpen(false);
+          }
+        }}
+        className={`group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium ${
+          currentSection === item.name ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        }`}
       >
-        <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-      </svg>
-      {item.name}
-    </button>
-  );
+        <svg
+          className="mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth="1.5"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+        </svg>
+        {!sidebarCollapsed && item.name}
+      </button>
+    );
+  };
 
   const renderContent = () => {
+    // Verificar si es una subsección de costos
+    if (currentSection.startsWith('Cálculo de Costos -')) {
+      const subsectionName = currentSection.replace('Cálculo de Costos - ', '');
+      
+      // Si es la subsección de Proveedores, mostrar el componente Suppliers_Costs
+      if (subsectionName === 'Proveedores') {
+        return <Suppliers_Costs />;
+      }
+      
+      // Para otras subsecciones, mostrar un placeholder
+      return (
+        <div className="py-2">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Cálculo de Costos - {subsectionName}
+            </h2>
+            <p className="text-gray-600">
+              Contenido para el cálculo de costos de {subsectionName.toLowerCase()}.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     switch(currentSection) {
       case 'Gestión de Inventario':
         return <InventoryManagement />;
@@ -107,6 +238,19 @@ const Dashboard = () => {
         return <LicenseManagement />;
       case 'Gestión de Recetas':
         return <RecipeManagement />;
+      case 'Cálculo de Costos':
+        return (
+          <div className="py-2">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Cálculo de Costos
+              </h2>
+              <p className="text-gray-600">
+                Selecciona una subsección para ver los cálculos de costos: Proveedores, Inventario o Menús.
+              </p>
+            </div>
+          </div>
+        );
       case 'Dashboard':
         return (
           <div className="py-2">
@@ -368,7 +512,7 @@ const Dashboard = () => {
           </div>
           <div className="mt-5 flex flex-grow flex-col">
             <nav className="flex-1 space-y-1 px-2">
-              {menuItems.map(item => renderMenuItem(item, true))}
+              {menuItems.map(item => renderMenuItem(item, true, false))}
             </nav>
           </div>
           <div className="flex flex-shrink-0 border-t border-gray-200 p-4">
@@ -428,26 +572,7 @@ const Dashboard = () => {
           </div>
           <div className="mt-5 flex flex-grow flex-col">
             <nav className="flex-1 space-y-1 px-2">
-              {menuItems.map(item => (
-                <button
-                  key={item.name}
-                  onClick={() => setCurrentSection(item.name)}
-                  className={`group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium ${
-                    currentSection === item.name ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <svg
-                    className="h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-                  </svg>
-                  <span className={`ml-3 ${sidebarCollapsed ? 'hidden' : 'block'}`}>{item.name}</span>
-                </button>
-              ))}
+              {menuItems.map(item => renderMenuItem(item, false, sidebarCollapsed))}
             </nav>
           </div>
           <div className="flex flex-shrink-0 border-t border-gray-200 p-2">
